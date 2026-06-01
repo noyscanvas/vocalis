@@ -1,0 +1,4 @@
+[[redirects]]
+  from = "/"
+  to   = "/vocalis.html"
+  status = 200
