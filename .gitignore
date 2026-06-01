@@ -1,0 +1,8 @@
+# Claude Code config (contains API keys — keep local only)
+.claude/
+
+# macOS
+.DS_Store
+
+# Node
+node_modules/

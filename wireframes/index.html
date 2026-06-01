@@ -1,0 +1,2237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=390, initial-scale=1.0">
+<title>Vocalis – Recording States</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green:       #39AD57;
+    --green-light: #ECF9EF;
+    --green-text:  #3EBD5F;
+    --blue:        #22B1DC;
+    --blue-light:  #E9F7FC;
+    --inactive:    #ADB5BD;
+    --separator:   #E4E4E4;
+    --backdrop:    #F8F8F8;
+    --white:       #FFFFFF;
+    --black:       #1A1A1A;
+    --amber:       #F5A623;
+    --red:         #E05252;
+    --font:        'Nunito', sans-serif;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body {
+    font-family: var(--font);
+    background: #1C1C1E;
+    display: flex; flex-direction: column;
+    align-items: center; padding: 24px 16px 48px;
+  }
+
+  .screen-nav {
+    display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center;
+  }
+  .screen-nav button {
+    font-family: var(--font); font-size: 12px; font-weight: 700;
+    padding: 7px 16px; border-radius: 20px;
+    border: 1.5px solid rgba(255,255,255,0.15);
+    background: transparent; color: rgba(255,255,255,0.4); cursor: pointer; transition: all 0.2s;
+  }
+  .screen-nav button.active { background: var(--blue); border-color: var(--blue); color: white; }
+
+  .phone {
+    width: 390px; background: var(--white);
+    border-radius: 44px; overflow: hidden;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.5);
+    position: relative;
+  }
+
+  .status-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 24px 0; height: 48px;
+  }
+  .status-bar .time { font-size: 15px; font-weight: 700; }
+
+  .screen { display: none; flex-direction: column; min-height: 812px; }
+  .screen.active { display: flex; }
+
+  /* ── LANGUAGE BAR ── */
+  .lang-bar {
+    display: flex; align-items: stretch;
+    background: var(--backdrop); border-radius: 16px; overflow: hidden;
+  }
+  .lang-btn {
+    flex: 1; padding: 14px 10px 12px;
+    background: transparent; border: none; cursor: pointer; font-family: var(--font);
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+  }
+  .lang-btn .flag  { font-size: 22px; line-height: 1; }
+  .lang-btn .lname { font-size: 15px; font-weight: 800; color: var(--black); }
+  .lang-btn .lsub  { font-size: 10px; font-weight: 700; color: var(--inactive); text-transform: uppercase; letter-spacing: 0.5px; }
+  .lang-btn.active-nurse { background: var(--white); border-radius: 12px; margin: 4px 0 4px 4px; }
+  .lang-btn.active-nurse .lname { color: var(--blue); }
+  .swap-btn {
+    width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+    background: var(--white); border: 1.5px solid var(--separator);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; align-self: center; margin: 0 2px;
+  }
+  .swap-btn svg { width: 18px; height: 18px; color: var(--inactive); }
+
+  /* ── MIC / STOP BUTTONS ── */
+  .mic-btn {
+    width: 72px; height: 72px; border-radius: 50%; border: none;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: transform 0.1s; flex-shrink: 0;
+  }
+  .mic-btn.nurse { background: var(--blue); }
+  .mic-btn svg { width: 30px; height: 30px; color: white; }
+
+  .stop-btn {
+    width: 72px; height: 72px; border-radius: 50%; border: none;
+    background: var(--red);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0; position: relative; z-index: 1;
+  }
+  .stop-btn svg { width: 24px; height: 24px; color: white; }
+
+  /* ── TIMER BADGE ── */
+  .timer-badge {
+    display: flex; align-items: center; gap: 5px;
+    background: var(--backdrop); border: none; cursor: pointer;
+    padding: 7px 10px 7px 8px; border-radius: 20px; font-family: var(--font);
+  }
+  .timer-badge svg   { width: 16px; height: 16px; color: var(--blue); flex-shrink: 0; }
+  .timer-badge .tlabel { font-size: 13px; font-weight: 700; color: var(--black); }
+  .timer-badge .tchev  { font-size: 10px; color: var(--inactive); }
+
+  /* ── AI BUTTON ── */
+  .ai-btn {
+    display: flex; align-items: center; gap: 4px;
+    background: linear-gradient(135deg, #E9F7FC, #ECF9EF);
+    border: 1.5px solid var(--separator); border-radius: 20px;
+    padding: 6px 10px 6px 7px; font-family: var(--font);
+    font-size: 12px; font-weight: 700; color: var(--inactive); cursor: pointer;
+  }
+  .ai-btn svg { width: 14px; height: 14px; color: var(--blue); }
+
+  /* ── BOTTOM NAV ── */
+  .bottom-nav {
+    display: flex; padding: 10px 0 20px;
+    border-top: 1px solid var(--separator);
+  }
+  .nav-item {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; gap: 3px;
+    cursor: pointer; color: var(--inactive);
+    font-size: 10px; font-weight: 600;
+  }
+  .nav-item.active { color: var(--green); }
+  .nav-item svg { width: 22px; height: 22px; }
+
+  /* ── RECORDING DOT PULSE ── */
+  @keyframes pulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.4; transform: scale(0.8); }
+  }
+  .rec-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--red); flex-shrink: 0;
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+
+  /* ── CURSOR BLINK ── */
+  @keyframes blink { 50% { opacity: 0; } }
+  .cursor {
+    display: inline-block; width: 2px; height: 22px;
+    background: var(--blue); margin-left: 3px;
+    vertical-align: middle; animation: blink 1s step-end infinite;
+  }
+
+  /* ── RING PROGRESS (timer) ── */
+  .ring-wrap {
+    position: relative; display: flex;
+    align-items: center; justify-content: center;
+  }
+  .ring-svg {
+    position: absolute; top: -8px; left: -8px;
+    width: 88px; height: 88px; transform: rotate(-90deg);
+  }
+  .ring-track { stroke: var(--separator); }
+  .ring-fill  {
+    stroke: var(--blue); stroke-linecap: round;
+    transition: stroke-dashoffset 1s linear, stroke 0.5s;
+  }
+
+  /* ── BAR PROGRESS (chars) ── */
+  .progress-bar-wrap {
+    margin: 0 24px;
+  }
+  .progress-bar-labels {
+    display: flex; justify-content: space-between;
+    font-size: 11px; font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .progress-bar-track {
+    height: 6px; background: var(--separator);
+    border-radius: 3px; overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%; border-radius: 3px;
+    transition: width 0.3s, background 0.5s;
+  }
+
+  /* ── WAVEFORM (decorative) ── */
+  .waveform {
+    display: flex; align-items: center; justify-content: center;
+    gap: 3px; height: 28px; margin: 12px 0 8px;
+  }
+  .wave-bar {
+    width: 3px; border-radius: 2px;
+    background: var(--blue); opacity: 0.5;
+  }
+  @keyframes wave1 { 0%,100%{height:6px} 50%{height:22px} }
+  @keyframes wave2 { 0%,100%{height:14px} 50%{height:6px} }
+  @keyframes wave3 { 0%,100%{height:20px} 50%{height:8px} }
+  @keyframes wave4 { 0%,100%{height:8px} 50%{height:24px} }
+  @keyframes wave5 { 0%,100%{height:16px} 50%{height:4px} }
+  .wave-bar:nth-child(1){animation:wave1 0.9s ease-in-out infinite;}
+  .wave-bar:nth-child(2){animation:wave2 0.7s ease-in-out infinite;}
+  .wave-bar:nth-child(3){animation:wave3 0.8s ease-in-out infinite;}
+  .wave-bar:nth-child(4){animation:wave4 1.0s ease-in-out infinite;}
+  .wave-bar:nth-child(5){animation:wave2 0.75s ease-in-out infinite;}
+  .wave-bar:nth-child(6){animation:wave3 0.85s ease-in-out infinite;}
+  .wave-bar:nth-child(7){animation:wave1 0.95s ease-in-out infinite;}
+  .wave-bar:nth-child(8){animation:wave4 0.7s ease-in-out infinite;}
+  .wave-bar:nth-child(9){animation:wave5 0.9s ease-in-out infinite;}
+
+  /* ANNOTATIONS */
+  .ann {
+    width: 390px; margin-top: 14px;
+    background: rgba(255,255,255,0.05); border-radius: 12px;
+    padding: 14px 16px; display: none;
+  }
+  .ann.show { display: block; }
+  .ann h4 { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.35);
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .ann ul { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+  .ann li { font-size: 12px; color: rgba(255,255,255,0.5); font-weight: 500;
+    line-height: 1.5; padding-left: 14px; position: relative; }
+  .ann li::before { content: '→'; position: absolute; left: 0; color: rgba(255,255,255,0.2); }
+</style>
+</head>
+<body>
+
+<div class="screen-nav">
+  <button onclick="show('s1a',this)">1A · Resting (top)</button>
+  <button onclick="show('s1b',this)">1B · Resting (bottom)</button>
+  <button class="active" onclick="show('s2a',this)">2A · Timer recording</button>
+  <button onclick="show('s2b1',this)">2B-1 · Bar on top</button>
+  <button onclick="show('s2b2',this)">2B-2 · Card, no ring</button>
+  <button onclick="show('s2b3',this)">2B-3 · Speech bubble</button>
+  <button onclick="show('res_1',this)">1 · Unequal</button>
+  <button onclick="show('res_2',this)">2 · Center ↑↓</button>
+  <button onclick="show('res_3a',this)">3A · Nurse spoke</button>
+  <button onclick="show('res_3b',this)">3B · Patient records</button>
+  <button onclick="show('res_3c',this)">3C · Patient spoke</button>
+  <button onclick="show('s_edit',this)">Edit mode</button>
+  <button onclick="show('s4',this)">4 · Patient turn</button>
+  <button onclick="show('s_conv',this)">Thread</button>
+  <button onclick="show('s5',this)">Mode popup</button>
+  <button onclick="show('res_4',this)">4 · Dominant</button>
+  <button onclick="show('res_5',this)">5 · Card</button>
+  <button onclick="show('res_6',this)">6 · Dock</button>
+  <button onclick="show('res_7_0',this)">7·0 · Rest</button>
+  <button onclick="show('res_7_1',this)">7·1 · Nurse rec</button>
+  <button onclick="show('res_7_2',this)">7·2 · Result</button>
+  <button onclick="show('res_7_3',this)">7·3 · Patient rec</button>
+  <button onclick="show('res_7_4',this)">7·4 · Done</button>
+  <button onclick="show('res_8_0',this)">8·0 · Rest</button>
+  <button onclick="show('res_8_1',this)">8·1 · Nurse rec</button>
+  <button onclick="show('res_8_2',this)">8·2 · Result</button>
+  <button onclick="show('res_8_3',this)">8·3 · Patient rec</button>
+  <button onclick="show('res_8_4',this)">8·4 · Done</button>
+</div>
+
+<div class="phone">
+
+<!-- ════════════════════════════════════════════
+  SCREEN 1A — Resting, lang top
+════════════════════════════════════════════ -->
+<div id="s1a" class="screen">
+  <div class="status-bar">
+    <span class="time">9:41</span>
+    <button class="ai-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+      </svg>
+      AI mode
+    </button>
+  </div>
+  <div style="padding: 6px 16px 14px;">
+    <div class="lang-bar">
+      <button class="lang-btn active-nurse">
+        <span class="flag">🇺🇸</span><span class="lname">English</span><span class="lsub">Speaking</span>
+      </button>
+      <button class="swap-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M7 16V4m0 0L3 8m4-4l4 4"/><path d="M17 8v12m0 0l4-4m-4 4l-4-4"/>
+        </svg>
+      </button>
+      <button class="lang-btn">
+        <span class="flag">🇲🇽</span><span class="lname">Spanish</span><span class="lsub">Output</span>
+      </button>
+    </div>
+  </div>
+  <div style="flex:1; display:flex; align-items:center; justify-content:center;">
+    <p style="font-size:15px; font-weight:500; color:var(--inactive); text-align:center;">Tap the mic to start speaking.</p>
+  </div>
+  <div style="padding: 0 20px 14px; display:flex; align-items:center; justify-content:space-between;">
+    <div style="width:90px;"></div>
+    <button class="mic-btn nurse" onclick="show('s2a', document.querySelectorAll('.screen-nav button')[2])">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        <line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
+      </svg>
+    </button>
+    <div style="width:90px; display:flex; justify-content:flex-end;">
+      <button class="timer-badge" onclick="show('s5', document.querySelectorAll('.screen-nav button')[14])">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>
+        </svg>
+        <span class="tlabel">Timer</span><span class="tchev">▾</span>
+      </button>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</div>
+    <div class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>Translate</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Cards</div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════
+  SCREEN 1B — Resting, lang bottom
+════════════════════════════════════════════ -->
+<div id="s1b" class="screen">
+  <div class="status-bar">
+    <button class="timer-badge" onclick="show('s5', document.querySelectorAll('.screen-nav button')[14])">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>
+      </svg>
+      <span class="tlabel">Timer</span><span class="tchev">▾</span>
+    </button>
+    <button class="ai-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+      </svg>AI mode
+    </button>
+  </div>
+  <div style="flex:1; position:relative; display:flex; align-items:center; justify-content:center;">
+    <p style="font-size:15px; font-weight:500; color:var(--inactive); text-align:center;">Tap the mic to start speaking.</p>
+    <div style="position:absolute; bottom:16px; right:20px;">
+      <button class="mic-btn nurse" onclick="show('s2b1', document.querySelectorAll('.screen-nav button')[3])">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+  <div style="padding: 8px 16px 10px; border-top: 1px solid var(--separator);">
+    <div class="lang-bar">
+      <button class="lang-btn active-nurse">
+        <span class="flag">🇺🇸</span><span class="lname">English</span><span class="lsub">Speaking</span>
+      </button>
+      <button class="swap-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M7 16V4m0 0L3 8m4-4l4 4"/><path d="M17 8v12m0 0l4-4m-4 4l-4-4"/>
+        </svg>
+      </button>
+      <button class="lang-btn">
+        <span class="flag">🇲🇽</span><span class="lname">Spanish</span><span class="lsub">Output</span>
+      </button>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</div>
+    <div class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>Translate</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Cards</div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════
+  SCREEN 2A — TIMER recording in progress
+  - Only English input panel shown (no split)
+  - Live transcript builds top-down
+  - Ring progress wraps stop button (green→amber)
+  - 7 of 10 seconds elapsed (ring ~70% depleted)
+  - Waveform above stop btn shows active audio
+  - Swap locked during recording
+════════════════════════════════════════════ -->
+<div id="s2a" class="screen">
+
+  <div class="status-bar">
+    <span class="time">9:41</span>
+    <button class="ai-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+      </svg>AI mode
+    </button>
+  </div>
+
+  <!-- Language bar — swap dimmed, recording indicator -->
+  <div style="padding: 6px 16px 14px;">
+    <div class="lang-bar">
+      <button class="lang-btn active-nurse">
+        <span class="flag">🇺🇸</span>
+        <span class="lname" style="display:flex;align-items:center;gap:6px;">
+          English <span class="rec-dot"></span>
+        </span>
+        <span class="lsub">Recording</span>
+      </button>
+      <!-- Swap locked -->
+      <div class="swap-btn" style="opacity:0.25; pointer-events:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M7 16V4m0 0L3 8m4-4l4 4"/><path d="M17 8v12m0 0l4-4m-4 4l-4-4"/>
+        </svg>
+      </div>
+      <button class="lang-btn" style="opacity:0.35; pointer-events:none;">
+        <span class="flag">🇲🇽</span><span class="lname">Spanish</span><span class="lsub">Output</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Live transcript area — fills screen -->
+  <div style="flex:1; padding: 8px 24px 0; display:flex; flex-direction:column;">
+    <!-- Transcript label -->
+    <div style="font-size:11px; font-weight:700; color:var(--blue); text-transform:uppercase; letter-spacing:0.6px; margin-bottom:12px;">
+      Live transcript
+    </div>
+    <!-- Transcript text -->
+    <div style="font-size:22px; font-weight:700; color:var(--black); line-height:1.5;">
+      Does he have any allergies to medication<span class="cursor"></span>
+    </div>
+  </div>
+
+  <!-- Waveform -->
+  <div class="waveform" style="padding: 0 24px;">
+    <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+    <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+    <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+  </div>
+
+  <!-- Stop button + ring + time label -->
+  <div style="display:flex; flex-direction:column; align-items:center; padding: 8px 20px 18px; gap: 6px;">
+    <div class="ring-wrap">
+      <!-- SVG ring: circumference of r=38 circle = 2π×38 ≈ 238.76 -->
+      <!-- 7s elapsed = 70% gone → offset = 238.76 × 0.30 = 71.6 (30% remaining) -->
+      <svg class="ring-svg" viewBox="0 0 88 88">
+        <circle class="ring-track" cx="44" cy="44" r="38" fill="none" stroke-width="5"/>
+        <circle class="ring-fill" cx="44" cy="44" r="38" fill="none" stroke-width="5"
+          stroke-dasharray="238.76" stroke-dashoffset="167" style="stroke:var(--amber)"/>
+      </svg>
+      <button class="stop-btn" onclick="show('s1a', document.querySelectorAll('.screen-nav button')[0])">
+        <svg viewBox="0 0 24 24" fill="white"><rect x="4" y="4" width="16" height="16" rx="2.5"/></svg>
+      </button>
+    </div>
+    <!-- Time label below ring -->
+    <div style="font-size:13px; font-weight:800; color:var(--amber);">3s left</div>
+    <div style="font-size:11px; font-weight:500; color:var(--inactive);">Tap stop or wait for silence</div>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</div>
+    <div class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>Translate</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Cards</div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════
+  SCREEN 2B-1 — CHAR COUNT · Bar on top
+  Thin full-width progress strip sits right
+  beneath the status bar — minimal, like a
+  browser loading indicator. Rest of the screen
+  is completely clean. No ring.
+════════════════════════════════════════════ -->
+<div id="s2b1" class="screen">
+
+  <div class="status-bar">
+    <div style="display:flex;align-items:center;gap:5px; background:var(--backdrop); padding:7px 10px 7px 8px; border-radius:20px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round">
+        <line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="10" x2="16" y2="10"/>
+        <line x1="4" y1="14" x2="20" y2="14"/><line x1="4" y1="18" x2="13" y2="18"/>
+      </svg>
+      <span style="font-size:13px; font-weight:700; color:var(--black);">312</span>
+      <span style="font-size:13px; font-weight:500; color:var(--inactive);">/ 750</span>
+    </div>
+    <button class="ai-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+      </svg>AI mode
+    </button>
+  </div>
+
+  <!-- Progress bar: full-width strip pinned just below status bar -->
+  <div style="height:4px; background:var(--separator); margin:6px 0 0; flex-shrink:0;">
+    <!-- 312/750 = 41.6% filled green -->
+    <div style="height:100%; width:41.6%; background:var(--green); transition:width 0.3s;"></div>
+  </div>
+
+  <div style="padding: 6px 16px 14px;">
+    <div class="lang-bar">
+      <button class="lang-btn active-nurse">
+        <span class="flag">🇺🇸</span>
+        <span class="lname" style="display:flex;align-items:center;gap:6px;">English <span class="rec-dot"></span></span>
+        <span class="lsub">Recording</span>
+      </button>
+      <div class="swap-btn" style="opacity:0.25; pointer-events:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M7 16V4m0 0L3 8m4-4l4 4"/><path d="M17 8v12m0 0l4-4m-4 4l-4-4"/>
+        </svg>
+      </div>
+      <button class="lang-btn" style="opacity:0.35; pointer-events:none;">
+        <span class="flag">🇲🇽</span><span class="lname">Spanish</span><span class="lsub">Output</span>
+      </button>
+    </div>
+  </div>
+
+  <div style="flex:1; padding: 8px 24px 0; display:flex; flex-direction:column;">
+    <div style="font-size:11px; font-weight:700; color:var(--green); text-transform:uppercase; letter-spacing:0.6px; margin-bottom:12px;">Live transcript</div>
+    <div style="font-size:22px; font-weight:700; color:var(--black); line-height:1.5;">
+      Does he have any allergies to medication or has he had any surgeries before<span class="cursor" style="background:var(--green);"></span>
+    </div>
+  </div>
+
+  <div class="waveform">
+    <div class="wave-bar" style="background:var(--green);"></div><div class="wave-bar" style="background:var(--green);"></div>
+    <div class="wave-bar" style="background:var(--green);"></div><div class="wave-bar" style="background:var(--green);"></div>
+    <div class="wave-bar" style="background:var(--green);"></div><div class="wave-bar" style="background:var(--green);"></div>
+    <div class="wave-bar" style="background:var(--green);"></div><div class="wave-bar" style="background:var(--green);"></div>
+    <div class="wave-bar" style="background:var(--green);"></div>
+  </div>
+
+  <!-- Stop button: no ring, bottom-right — same thumb zone as resting mic in 1B -->
+  <div style="padding: 8px 20px 14px; display:flex; align-items:center; justify-content:space-between;">
+    <div style="font-size:12px; font-weight:600; color:var(--inactive);">438 chars left</div>
+    <button class="stop-btn" onclick="show('s1b', document.querySelectorAll('.screen-nav button')[1])">
+      <svg viewBox="0 0 24 24" fill="white"><rect x="4" y="4" width="16" height="16" rx="2.5"/></svg>
+    </button>
+  </div>
+
+  <div style="font-size:11px; font-weight:500; color:var(--inactive); text-align:center; padding: 0 24px 12px;">Tap stop or wait for silence</div>
+
+  <div class="bottom-nav">
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</div>
+    <div class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>Translate</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Cards</div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════
+  SCREEN 2B-2 — CHAR COUNT · Control card, no ring
+  Same card layout as sketch: transcript above,
+  all recording controls in a raised bottom panel.
+  Stop button is a plain circle — no ring chrome.
+════════════════════════════════════════════ -->
+<div id="s2b2" class="screen">
+
+  <div class="status-bar">
+    <div style="display:flex;align-items:center;gap:5px; background:var(--backdrop); padding:7px 10px 7px 8px; border-radius:20px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round">
+        <line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="10" x2="16" y2="10"/>
+        <line x1="4" y1="14" x2="20" y2="14"/><line x1="4" y1="18" x2="13" y2="18"/>
+      </svg>
+      <span style="font-size:13px; font-weight:700; color:var(--black);">312</span>
+      <span style="font-size:13px; font-weight:500; color:var(--inactive);">/ 750</span>
+    </div>
+    <button class="ai-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+      </svg>AI mode
+    </button>
+  </div>
+
+  <div style="padding: 6px 16px 14px;">
+    <div class="lang-bar">
+      <button class="lang-btn active-nurse">
+        <span class="flag">🇺🇸</span>
+        <span class="lname" style="display:flex;align-items:center;gap:6px;">English <span class="rec-dot"></span></span>
+        <span class="lsub">Recording</span>
+      </button>
+      <div class="swap-btn" style="opacity:0.25; pointer-events:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M7 16V4m0 0L3 8m4-4l4 4"/><path d="M17 8v12m0 0l4-4m-4 4l-4-4"/>
+        </svg>
+      </div>
+      <button class="lang-btn" style="opacity:0.35; pointer-events:none;">
+        <span class="flag">🇲🇽</span><span class="lname">Spanish</span><span class="lsub">Output</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Transcript fills freely above the card -->
+  <div style="flex:1; padding: 8px 24px 0; display:flex; flex-direction:column;">
+    <div style="font-size:11px; font-weight:700; color:var(--green); text-transform:uppercase; letter-spacing:0.6px; margin-bottom:12px;">Live transcript</div>
+    <div style="font-size:22px; font-weight:700; color:var(--black); line-height:1.5;">
+      Does he have any allergies to medication or has he had any surgeries before<span class="cursor" style="background:var(--green);"></span>
+    </div>
+  </div>
+
+  <!-- Control card: waveform + plain stop + status line -->
+  <div style="
+    background: var(--white);
+    border-top: 1px solid var(--separator);
+    box-shadow: 0 -6px 24px rgba(0,0,0,0.06);
+    border-radius: 24px 24px 0 0;
+    padding: 16px 24px 14px;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+  ">
+    <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span class="rec-dot"></span>
+        <span style="font-size:12px; font-weight:700; color:var(--inactive); text-transform:uppercase; letter-spacing:0.5px;">Listening</span>
+      </div>
+      <div style="font-size:13px; font-weight:700; color:var(--green);">438 <span style="font-weight:500; color:var(--inactive);">chars left</span></div>
+    </div>
+    <div class="waveform" style="margin:0; height:22px;">
+      <div class="wave-bar" style="background:var(--green);"></div><div class="wave-bar" style="background:var(--green);"></div>
+      <div class="wave-bar" style="background:var(--green);"></div><div class="wave-bar" style="background:var(--green);"></div>
+      <div class="wave-bar" style="background:var(--green);"></div><div class="wave-bar" style="background:var(--green);"></div>
+      <div class="wave-bar" style="background:var(--green);"></div><div class="wave-bar" style="background:var(--green);"></div>
+      <div class="wave-bar" style="background:var(--green);"></div>
+    </div>
+    <!-- Plain stop button — no ring -->
+    <button class="stop-btn" onclick="show('s1b', document.querySelectorAll('.screen-nav button')[1])">
+      <svg viewBox="0 0 24 24" fill="white"><rect x="4" y="4" width="16" height="16" rx="2.5"/></svg>
+    </button>
+    <div style="font-size:11px; font-weight:500; color:var(--inactive);">Tap stop or wait for silence</div>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</div>
+    <div class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>Translate</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Cards</div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════
+  SCREEN 2B-3 — CHAR COUNT · Speech bubble + bar
+  Transcript lives inside a speech bubble card.
+  A horizontal fill bar runs along the bottom
+  edge of the bubble to show chars remaining.
+  Stop button below the bubble, no ring.
+════════════════════════════════════════════ -->
+<div id="s2b3" class="screen">
+
+  <div class="status-bar">
+    <div style="display:flex;align-items:center;gap:5px; background:var(--backdrop); padding:7px 10px 7px 8px; border-radius:20px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round">
+        <line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="10" x2="16" y2="10"/>
+        <line x1="4" y1="14" x2="20" y2="14"/><line x1="4" y1="18" x2="13" y2="18"/>
+      </svg>
+      <span style="font-size:13px; font-weight:700; color:var(--black);">312</span>
+      <span style="font-size:13px; font-weight:500; color:var(--inactive);">/ 750</span>
+    </div>
+    <button class="ai-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+      </svg>AI mode
+    </button>
+  </div>
+
+  <div style="padding: 6px 16px 14px;">
+    <div class="lang-bar">
+      <button class="lang-btn active-nurse">
+        <span class="flag">🇺🇸</span>
+        <span class="lname" style="display:flex;align-items:center;gap:6px;">English <span class="rec-dot"></span></span>
+        <span class="lsub">Recording</span>
+      </button>
+      <div class="swap-btn" style="opacity:0.25; pointer-events:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M7 16V4m0 0L3 8m4-4l4 4"/><path d="M17 8v12m0 0l4-4m-4 4l-4-4"/>
+        </svg>
+      </div>
+      <button class="lang-btn" style="opacity:0.35; pointer-events:none;">
+        <span class="flag">🇲🇽</span><span class="lname">Spanish</span><span class="lsub">Output</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Spacer pushes bubble + controls down into lower portion -->
+  <div style="flex:1;"></div>
+
+  <!-- Speech bubble: contains transcript + progress bar at bottom -->
+  <div style="margin: 0 16px; position:relative;">
+    <div style="
+      background: var(--green-light);
+      border: 1.5px solid rgba(57,173,87,0.2);
+      border-radius: 20px 20px 20px 4px;
+      overflow: hidden;
+    ">
+      <!-- Transcript inside bubble -->
+      <div style="padding: 18px 20px 14px;">
+        <div style="font-size:11px; font-weight:700; color:var(--green); text-transform:uppercase; letter-spacing:0.6px; margin-bottom:10px;">Live transcript</div>
+        <div style="font-size:20px; font-weight:700; color:var(--black); line-height:1.5;">
+          Does he have any allergies to medication or has he had any surgeries before<span class="cursor" style="background:var(--green);"></span>
+        </div>
+      </div>
+      <!-- Progress bar along bottom edge of bubble -->
+      <div style="height:6px; background:rgba(0,0,0,0.06);">
+        <!-- 312/750 = 41.6% remaining space used; bar fills from left -->
+        <div style="height:100%; width:41.6%; background:var(--green);"></div>
+      </div>
+    </div>
+    <!-- Bubble tail (small triangle) -->
+    <div style="
+      position:absolute; bottom:-10px; left:20px;
+      width:0; height:0;
+      border-left:10px solid transparent;
+      border-right:4px solid transparent;
+      border-top:11px solid rgba(57,173,87,0.2);
+    "></div>
+    <div style="
+      position:absolute; bottom:-9px; left:21px;
+      width:0; height:0;
+      border-left:9px solid transparent;
+      border-right:3px solid transparent;
+      border-top:10px solid var(--green-light);
+    "></div>
+  </div>
+
+  <!-- Waveform + stop below the bubble -->
+  <div class="waveform" style="margin-top:18px;">
+    <div class="wave-bar" style="background:var(--green);"></div><div class="wave-bar" style="background:var(--green);"></div>
+    <div class="wave-bar" style="background:var(--green);"></div><div class="wave-bar" style="background:var(--green);"></div>
+    <div class="wave-bar" style="background:var(--green);"></div><div class="wave-bar" style="background:var(--green);"></div>
+    <div class="wave-bar" style="background:var(--green);"></div><div class="wave-bar" style="background:var(--green);"></div>
+    <div class="wave-bar" style="background:var(--green);"></div>
+  </div>
+
+  <div style="display:flex; flex-direction:column; align-items:center; padding: 8px 20px 14px; gap:6px;">
+    <!-- Plain stop button, no ring -->
+    <button class="stop-btn" onclick="show('s1b', document.querySelectorAll('.screen-nav button')[1])">
+      <svg viewBox="0 0 24 24" fill="white"><rect x="4" y="4" width="16" height="16" rx="2.5"/></svg>
+    </button>
+    <div style="font-size:11px; font-weight:500; color:var(--inactive);">Tap stop or wait for silence</div>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</div>
+    <div class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>Translate</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Cards</div>
+  </div>
+</div>
+
+
+
+<!-- ════════════════════════════════════════════
+  SCREEN res_1 — Result · 1 Unequal zones
+════════════════════════════════════════════ -->
+<div id="res_1" class="screen">
+  <div class="status-bar"><span class="time">9:41</span></div>
+
+  <!-- SPANISH ZONE — large, translation, patient reads -->
+  <div style="flex:2; background:var(--white); padding:18px 20px 16px; display:flex; flex-direction:column; border-bottom:1px solid var(--separator);">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+      <span style="font-size:10px; font-weight:700; color:#9A7A10; text-transform:uppercase; letter-spacing:0.5px;">🇲🇽 Spanish · Translation</span>
+    </div>
+    <p style="font-size:24px; font-weight:700; color:var(--black); line-height:1.45; flex:1;">¿Tiene alguna alergia a algún medicamento?</p>
+    <!-- Timer + Play anchored bottom-right of this zone -->
+    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:12px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button style="display:flex;align-items:center;gap:3px;background:rgba(0,0,0,0.07);border:none;padding:4px 9px;border-radius:12px;font-family:var(--font);font-size:12px;font-weight:700;color:#9A7A10;cursor:pointer;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9A7A10" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>1×</button>
+        <button style="display:flex;align-items:center;gap:4px;background:rgba(0,0,0,0.07);border:none;padding:4px 9px;border-radius:12px;font-family:var(--font);font-size:12px;font-weight:700;color:#9A7A10;cursor:pointer;"><svg width="11" height="11" viewBox="0 0 24 24" fill="#9A7A10"><polygon points="5 3 19 12 5 21 5 3"/></svg>Play</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ENGLISH ZONE — smaller, original, nurse reads -->
+  <div style="flex:1; background:var(--white); padding:14px 20px 14px; display:flex; flex-direction:column; position:relative; border-bottom:1px solid var(--separator);">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+      <span style="font-size:10px; font-weight:700; color:var(--inactive); text-transform:uppercase; letter-spacing:0.5px;">🇺🇸 English · Original</span>
+      <button style="display:flex;align-items:center;gap:4px;background:var(--backdrop);border:none;padding:4px 10px;border-radius:14px;font-family:var(--font);font-size:12px;font-weight:700;color:var(--inactive);cursor:pointer;" onclick="show('s_edit', document.querySelectorAll('.screen-nav button')[11])"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit</button>
+    </div>
+    <p style="font-size:17px; font-weight:600; color:#555; line-height:1.45; flex:1;">Does he have any allergies to medication?</p>
+    <!-- Mic button anchored bottom-right inside English zone -->
+    <div style="position:absolute; bottom:14px; right:20px;">
+      <button class="mic-btn nurse" onclick="show('s2a', document.querySelectorAll('.screen-nav button')[2])">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Language bar at bottom -->
+  <div style="padding:6px 16px 8px; background:var(--white);">
+    <div class="lang-bar">
+      <button class="lang-btn active-nurse">
+        <span class="flag">🇺🇸</span><span class="lname">English</span><span class="lsub">Speaking</span>
+      </button>
+      <button class="swap-btn" onclick="show('s4', document.querySelectorAll('.screen-nav button')[12])"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M7 16V4m0 0L3 8m4-4l4 4"/><path d="M17 8v12m0 0l4-4m-4 4l-4-4"/></svg></button>
+      <button class="lang-btn">
+        <span class="flag">🇲🇽</span><span class="lname">Spanish</span><span class="lsub">Output</span>
+      </button>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</div>
+    <div class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>Translate</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Cards</div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════
+  SCREEN res_2 — Result · 2 Center switch button
+════════════════════════════════════════════ -->
+<div id="res_2" class="screen">
+  <div class="status-bar"><span class="time">9:41</span></div>
+
+  <!-- SPANISH ZONE — top half -->
+  <div style="flex:1; background:var(--white); padding:18px 20px 14px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+      <span style="font-size:10px; font-weight:700; color:#9A7A10; text-transform:uppercase; letter-spacing:0.5px;">🇲🇽 Spanish · Translation</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button style="display:flex;align-items:center;gap:3px;background:rgba(0,0,0,0.07);border:none;padding:4px 9px;border-radius:12px;font-family:var(--font);font-size:12px;font-weight:700;color:#9A7A10;cursor:pointer;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9A7A10" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>1×</button>
+        <button style="display:flex;align-items:center;gap:4px;background:rgba(0,0,0,0.07);border:none;padding:4px 9px;border-radius:12px;font-family:var(--font);font-size:12px;font-weight:700;color:#9A7A10;cursor:pointer;"><svg width="11" height="11" viewBox="0 0 24 24" fill="#9A7A10"><polygon points="5 3 19 12 5 21 5 3"/></svg>Play</button>
+      </div>
+    </div>
+    <p style="font-size:21px; font-weight:700; color:var(--black); line-height:1.45; flex:1;">¿Tiene alguna alergia a algún medicamento?</p>
+  </div>
+
+  <!-- DIVIDER with floating ↑↓ switch button centered on it -->
+  <div style="height:0; position:relative; z-index:10; display:flex; align-items:center; justify-content:center;">
+    <button onclick="show('s4', document.querySelectorAll('.screen-nav button')[12])"
+            style="position:absolute; top:-22px; display:flex; align-items:center; gap:8px; background:var(--white); border:2px solid var(--separator); padding:8px 20px; border-radius:24px; font-family:var(--font); font-size:13px; font-weight:800; color:var(--black); cursor:pointer; box-shadow:0 2px 12px rgba(0,0,0,0.10);">
+      <span style="color:var(--inactive); font-size:12px;">EN</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2.5" stroke-linecap="round">
+        <path d="M7 16V4m0 0L3 8m4-4l4 4"/><path d="M17 8v12m0 0l4-4m-4 4l-4-4"/>
+      </svg>
+      <span style="color:var(--inactive); font-size:12px;">ES</span>
+    </button>
+  </div>
+
+  <!-- ENGLISH ZONE — bottom half -->
+  <div style="flex:1; background:var(--white); padding:18px 20px 14px; display:flex; flex-direction:column; border-top:1px solid var(--separator);">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+      <span style="font-size:10px; font-weight:700; color:var(--inactive); text-transform:uppercase; letter-spacing:0.5px;">🇺🇸 English · Original</span>
+    </div>
+    <p style="font-size:21px; font-weight:600; color:#555; line-height:1.45; flex:1;">Does he have any allergies to medication?</p>
+  </div>
+
+  <!-- Mic at very bottom -->
+  <div style="padding:10px 20px 14px; background:var(--white); border-top:1px solid var(--separator); display:flex; align-items:center; justify-content:center; gap:16px;">
+    <button class="mic-btn nurse" onclick="show('s2a', document.querySelectorAll('.screen-nav button')[2])">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+    </button>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</div>
+    <div class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>Translate</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Cards</div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════
+  SCREEN res_3a — Fixed zones · nurse just spoke
+════════════════════════════════════════════ -->
+<div id="res_3a" class="screen">
+  <div class="status-bar"><span class="time">9:41</span></div>
+
+  <!-- SPANISH ZONE — shows translation, tap = patient records -->
+  <div style="flex:1; background:var(--white); padding:18px 20px 14px; display:flex; flex-direction:column; cursor:pointer; border-bottom:1px solid var(--separator);"
+       onclick="show('res_3b', document.querySelectorAll('.screen-nav button')[9])">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+      <span style="font-size:10px; font-weight:700; color:var(--inactive); text-transform:uppercase; letter-spacing:0.5px;">🇲🇽 Spanish · Translation</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button style="display:flex;align-items:center;gap:3px;background:rgba(0,0,0,0.07);border:none;padding:4px 9px;border-radius:12px;font-family:var(--font);font-size:12px;font-weight:700;color:var(--inactive);cursor:pointer;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>1×</button>
+        <button style="display:flex;align-items:center;gap:4px;background:rgba(0,0,0,0.07);border:none;padding:4px 9px;border-radius:12px;font-family:var(--font);font-size:12px;font-weight:700;color:var(--inactive);cursor:pointer;"><svg width="11" height="11" viewBox="0 0 24 24" fill="var(--inactive)"><polygon points="5 3 19 12 5 21 5 3"/></svg>Play</button>
+      </div>
+    </div>
+    <p style="font-size:21px; font-weight:700; color:var(--black); line-height:1.45; flex:1;">¿Tiene alguna alergia a algún medicamento?</p>
+    <div style="display:flex; align-items:center; gap:6px; padding:7px 12px; background:var(--backdrop); border-radius:10px; margin-top:8px;">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--inactive)" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+      <span style="font-size:11px; font-weight:700; color:var(--inactive);">Patient — tap here to respond in Spanish</span>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--inactive)" stroke-width="2" stroke-linecap="round" style="margin-left:auto;"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+  </div>
+
+  <!-- ENGLISH ZONE — HIGHLIGHTED, nurse just recorded here -->
+  <div style="flex:1; background:var(--blue-light); border-left:3px solid var(--blue); padding:18px 20px 14px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+      <div style="display:flex; align-items:center; gap:7px;">
+        <div style="width:8px; height:8px; border-radius:50%; background:var(--blue);"></div>
+        <span style="font-size:10px; font-weight:700; color:var(--blue); text-transform:uppercase; letter-spacing:0.5px;">🇺🇸 English · Just recorded</span>
+      </div>
+      <button style="display:flex;align-items:center;gap:4px;background:var(--backdrop);border:none;padding:4px 10px;border-radius:14px;font-family:var(--font);font-size:12px;font-weight:700;color:var(--inactive);cursor:pointer;" onclick="show('s_edit', document.querySelectorAll('.screen-nav button')[11])"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit</button>
+    </div>
+    <p style="font-size:21px; font-weight:700; color:var(--black); line-height:1.45; flex:1;">Does he have any allergies to medication?</p>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</div>
+    <div class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>Translate</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Cards</div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════
+  SCREEN res_3b — Fixed zones · patient recording Spanish
+════════════════════════════════════════════ -->
+<div id="res_3b" class="screen">
+  <div class="status-bar"><span class="time">9:41</span></div>
+
+  <!-- SPANISH ZONE — ACTIVE, patient is speaking -->
+  <div style="flex:1; background:#FFF8E8; border:2px solid rgba(154,122,16,0.45); padding:18px 20px 14px; display:flex; flex-direction:column; position:relative;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span class="rec-dot" style="background:var(--amber);"></span>
+        <span style="font-size:10px; font-weight:700; color:#9A7A10; text-transform:uppercase; letter-spacing:0.5px;">🇲🇽 Spanish · Recording</span>
+      </div>
+      <div style="background:rgba(154,122,16,0.12); padding:3px 10px; border-radius:12px;">
+        <span style="font-size:11px; font-weight:800; color:#9A7A10; text-transform:uppercase; letter-spacing:0.4px;">Patient</span>
+      </div>
+    </div>
+    <p style="font-size:21px; font-weight:700; color:var(--black); line-height:1.45; flex:1;">No, no tengo ninguna alergia<span class="cursor" style="background:var(--amber);"></span></p>
+  </div>
+
+  <!-- RECORDING PILL — straddles the divider, timer countdown -->
+  <div style="height:0; position:relative; z-index:10; display:flex; align-items:center; justify-content:center;">
+    <div style="position:absolute; top:-20px; display:flex; align-items:center; gap:10px; background:var(--white); border:2px solid var(--separator); padding:7px 16px 7px 14px; border-radius:28px; box-shadow:0 2px 12px rgba(0,0,0,0.10);">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+      <span style="font-size:12px; font-weight:700; color:var(--black);">7s left</span>
+      <button onclick="show('res_3c', document.querySelectorAll('.screen-nav button')[10])"
+              style="width:26px; height:26px; border-radius:50%; background:var(--red); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="white"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ENGLISH ZONE — passive, nurse's last text, dimmed -->
+  <div style="flex:1; background:var(--white); padding:18px 20px 14px; display:flex; flex-direction:column; border-top:1px solid var(--separator); opacity:0.5; pointer-events:none;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+      <span style="font-size:10px; font-weight:700; color:var(--inactive); text-transform:uppercase; letter-spacing:0.5px;">🇺🇸 English</span>
+      <div style="background:var(--backdrop); padding:3px 10px; border-radius:12px;">
+        <span style="font-size:11px; font-weight:800; color:var(--inactive); text-transform:uppercase; letter-spacing:0.4px;">Nurse</span>
+      </div>
+    </div>
+    <p style="font-size:21px; font-weight:600; color:#999; line-height:1.45; flex:1;">Does he have any allergies to medication?</p>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</div>
+    <div class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>Translate</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Cards</div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════
+  SCREEN res_3c — Fixed zones · patient done, English shows translation
+════════════════════════════════════════════ -->
+<div id="res_3c" class="screen">
+  <div class="status-bar"><span class="time">9:41</span></div>
+
+  <!-- SPANISH ZONE — highlighted, patient just spoke -->
+  <div style="flex:1; background:#FFF8E8; border-left:3px solid rgba(154,122,16,0.6); padding:18px 20px 14px; display:flex; flex-direction:column; border-bottom:1px solid var(--separator);">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+      <div style="display:flex; align-items:center; gap:7px;">
+        <div style="width:8px; height:8px; border-radius:50%; background:#9A7A10;"></div>
+        <span style="font-size:10px; font-weight:700; color:#9A7A10; text-transform:uppercase; letter-spacing:0.5px;">🇲🇽 Spanish · Just recorded</span>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button style="display:flex;align-items:center;gap:3px;background:rgba(0,0,0,0.07);border:none;padding:4px 9px;border-radius:12px;font-family:var(--font);font-size:12px;font-weight:700;color:#9A7A10;cursor:pointer;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9A7A10" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>1×</button>
+        <button style="display:flex;align-items:center;gap:4px;background:rgba(0,0,0,0.07);border:none;padding:4px 9px;border-radius:12px;font-family:var(--font);font-size:12px;font-weight:700;color:#9A7A10;cursor:pointer;"><svg width="11" height="11" viewBox="0 0 24 24" fill="#9A7A10"><polygon points="5 3 19 12 5 21 5 3"/></svg>Play</button>
+      </div>
+    </div>
+    <p style="font-size:21px; font-weight:700; color:var(--black); line-height:1.45; flex:1;">No, no tengo ninguna alergia.</p>
+  </div>
+
+  <!-- ENGLISH ZONE — shows translation of patient's Spanish, tap to ask next -->
+  <div style="flex:1; background:var(--white); padding:18px 20px 14px; display:flex; flex-direction:column; cursor:pointer;"
+       onclick="show('res_3a', document.querySelectorAll('.screen-nav button')[8])">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+      <span style="font-size:10px; font-weight:700; color:var(--inactive); text-transform:uppercase; letter-spacing:0.5px;">🇺🇸 English · Translation</span>
+      <button style="display:flex;align-items:center;gap:4px;background:var(--backdrop);border:none;padding:4px 10px;border-radius:14px;font-family:var(--font);font-size:12px;font-weight:700;color:var(--inactive);cursor:pointer;" onclick="show('s_edit', document.querySelectorAll('.screen-nav button')[11])"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit</button>
+    </div>
+    <p style="font-size:21px; font-weight:600; color:var(--black); line-height:1.45; flex:1;">No, I don't have any allergies.</p>
+    <div style="display:flex; align-items:center; gap:6px; padding:7px 12px; background:var(--backdrop); border-radius:10px; margin-top:8px;">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--inactive)" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+      <span style="font-size:11px; font-weight:700; color:var(--inactive);">Nurse — tap here to ask next question</span>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--inactive)" stroke-width="2" stroke-linecap="round" style="margin-left:auto;"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</div>
+    <div class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>Translate</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Cards</div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════
+  SCREEN s_edit — Edit mode (nurse edits original)
+════════════════════════════════════════════ -->
+<div id="s_edit" class="screen">
+  <div class="status-bar"><span class="time">9:41</span></div>
+
+  <!-- Translation zone — dimmed, passive context -->
+  <div style="flex:1; background:#FFF8E8; padding:18px 20px 14px; display:flex; flex-direction:column; opacity:0.4; pointer-events:none; border-bottom:1px solid var(--separator);">
+    <span style="font-size:10px; font-weight:700; color:#9A7A10; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:14px; display:block;">🇲🇽 Spanish · Translation</span>
+    <p style="font-size:21px; font-weight:700; color:var(--black); line-height:1.45;">¿Tiene alguna alergia a algún medicamento?</p>
+  </div>
+
+  <!-- Edit zone — active text editing -->
+  <div style="flex:1; background:var(--white); display:flex; flex-direction:column; border-top:2px solid var(--blue);">
+    <!-- Edit header -->
+    <div style="padding:12px 20px 10px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--separator);">
+      <div style="display:flex; align-items:center; gap:6px;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        <span style="font-size:11px; font-weight:700; color:var(--blue); text-transform:uppercase; letter-spacing:0.5px;">Editing · English</span>
+      </div>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <button onclick="show('res_1', document.querySelectorAll('.screen-nav button')[6])"
+                style="font-family:var(--font); font-size:14px; font-weight:700; color:var(--inactive); background:none; border:none; cursor:pointer;">Cancel</button>
+        <button onclick="show('res_1', document.querySelectorAll('.screen-nav button')[6])"
+                style="font-family:var(--font); font-size:14px; font-weight:700; color:white; background:var(--blue); border:none; padding:7px 16px; border-radius:20px; cursor:pointer;">Done</button>
+      </div>
+    </div>
+    <!-- Editable text with cursor -->
+    <div style="flex:1; padding:18px 20px;">
+      <p style="font-size:22px; font-weight:600; color:var(--black); line-height:1.5;">Does he have any allergies to medication?<span class="cursor" style="background:var(--blue);"></span></p>
+    </div>
+    <!-- Retranslate option -->
+    <div style="padding:10px 20px 12px; border-top:1px solid var(--separator); display:flex; align-items:center; gap:8px;">
+      <span style="font-size:12px; font-weight:600; color:var(--inactive); flex:1;">After saving, update the Spanish translation?</span>
+      <button style="background:var(--blue-light); border:none; padding:5px 12px; border-radius:14px; font-family:var(--font); font-size:12px; font-weight:700; color:var(--blue); cursor:pointer;">Retranslate</button>
+    </div>
+  </div>
+
+  <!-- Keyboard placeholder -->
+  <div style="height:56px; background:var(--backdrop); border-top:1px solid var(--separator); display:flex; align-items:center; justify-content:center;">
+    <span style="font-size:11px; font-weight:600; color:var(--inactive);">⌨ Keyboard</span>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</div>
+    <div class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>Translate</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Cards</div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════
+  SCREEN 4 — Patient's turn (language switched)
+════════════════════════════════════════════ -->
+<div id="s4" class="screen">
+  <div class="status-bar"><span class="time">9:41</span></div>
+
+  <!-- Dimmed nurse exchange — compressed at top -->
+  <div style="padding:12px 16px 14px; background:var(--white); border-bottom:1px solid var(--separator); opacity:0.4; pointer-events:none;">
+    <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+      <div style="width:7px; height:7px; border-radius:50%; background:var(--blue);"></div>
+      <span style="font-size:10px; font-weight:700; color:var(--blue); text-transform:uppercase; letter-spacing:0.4px;">Nurse</span>
+    </div>
+    <p style="font-size:14px; font-weight:600; color:var(--black); line-height:1.4;">Does he have any allergies to medication?</p>
+    <p style="font-size:12px; font-weight:500; color:var(--inactive); margin-top:3px; font-style:italic;">¿Tiene alguna alergia a algún medicamento?</p>
+  </div>
+
+  <!-- Large GREEN zone — patient records -->
+  <div style="flex:1; background:var(--green-light); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px 24px; gap:18px;">
+    <div style="background:var(--green); padding:6px 18px; border-radius:20px;">
+      <span style="font-size:12px; font-weight:800; color:white; text-transform:uppercase; letter-spacing:0.6px;">Patient's turn</span>
+    </div>
+    <p style="font-size:19px; font-weight:700; color:var(--black); line-height:1.45; text-align:center;">¿Tiene alguna alergia a algún medicamento?</p>
+    <div style="display:flex; align-items:center; gap:8px; margin-top:4px;">
+      <span class="rec-dot" style="background:var(--green);"></span>
+      <span style="font-size:12px; font-weight:700; color:var(--green); text-transform:uppercase; letter-spacing:0.5px;">Listening…</span>
+    </div>
+    <button class="mic-btn" style="background:var(--green); width:80px; height:80px; margin-top:8px;"
+            onclick="show('s_conv', document.querySelectorAll('.screen-nav button')[13])">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        <line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
+      </svg>
+    </button>
+    <p style="font-size:12px; font-weight:600; color:var(--green); opacity:0.7;">Tap to start · stops on silence</p>
+  </div>
+
+  <!-- Language bar — FLIPPED: Spanish speaking, English output -->
+  <div style="padding:6px 16px 8px; background:var(--white); border-top:1px solid var(--separator);">
+    <div class="lang-bar">
+      <button class="lang-btn" style="background:var(--white); border-radius:12px; margin:4px 0 4px 4px;">
+        <span class="flag">🇲🇽</span>
+        <span class="lname" style="color:var(--green);">Spanish</span>
+        <span class="lsub">Speaking</span>
+      </button>
+      <button class="swap-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M7 16V4m0 0L3 8m4-4l4 4"/><path d="M17 8v12m0 0l4-4m-4 4l-4-4"/>
+        </svg>
+      </button>
+      <button class="lang-btn">
+        <span class="flag">🇺🇸</span><span class="lname">English</span><span class="lsub">Output</span>
+      </button>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</div>
+    <div class="nav-item active" style="color:var(--green);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>Translate</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Cards</div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════
+  SCREEN s_conv — Conversation thread
+════════════════════════════════════════════ -->
+<div id="s_conv" class="screen">
+  <div class="status-bar"><span class="time">9:41</span></div>
+
+  <!-- Thread — stacked exchange cards -->
+  <div style="flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; background:var(--backdrop);">
+
+    <!-- Nurse card (blue) -->
+    <div style="background:var(--white); border-radius:16px; border:1.5px solid rgba(34,177,220,0.2); overflow:hidden;">
+      <div style="padding:14px 14px 12px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <div style="width:8px; height:8px; border-radius:50%; background:var(--blue);"></div>
+            <span style="font-size:10px; font-weight:700; color:var(--blue); text-transform:uppercase; letter-spacing:0.4px;">Nurse · English</span>
+          </div>
+          <button style="display:flex; align-items:center; gap:4px; background:rgba(34,177,220,0.1); border:none; padding:4px 9px; border-radius:14px; font-family:var(--font); font-size:11px; font-weight:700; color:var(--blue); cursor:pointer;">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            Edit
+          </button>
+        </div>
+        <p style="font-size:17px; font-weight:700; color:var(--black); line-height:1.4;">Does he have any allergies to medication?</p>
+      </div>
+      <div style="padding:10px 14px 12px; background:var(--blue-light); border-top:1px solid rgba(34,177,220,0.12);">
+        <span style="font-size:10px; font-weight:700; color:var(--blue); text-transform:uppercase; letter-spacing:0.4px; display:block; margin-bottom:4px;">🇲🇽 Spanish</span>
+        <p style="font-size:14px; font-weight:500; color:var(--black); line-height:1.4; font-style:italic;">¿Tiene alguna alergia a algún medicamento?</p>
+      </div>
+    </div>
+
+    <!-- Patient card (green) — indented right -->
+    <div style="background:var(--white); border-radius:16px; border:1.5px solid rgba(57,173,87,0.2); overflow:hidden; margin-left:20px;">
+      <div style="padding:14px 14px 12px;">
+        <div style="display:flex; align-items:center; gap:6px; margin-bottom:8px;">
+          <div style="width:8px; height:8px; border-radius:50%; background:var(--green);"></div>
+          <span style="font-size:10px; font-weight:700; color:var(--green); text-transform:uppercase; letter-spacing:0.4px;">Patient · Spanish</span>
+        </div>
+        <p style="font-size:17px; font-weight:700; color:var(--black); line-height:1.4;">No, no tengo ninguna alergia.</p>
+      </div>
+      <div style="padding:10px 14px 12px; background:var(--green-light); border-top:1px solid rgba(57,173,87,0.1);">
+        <span style="font-size:10px; font-weight:700; color:var(--green); text-transform:uppercase; letter-spacing:0.4px; display:block; margin-bottom:4px;">🇺🇸 English</span>
+        <p style="font-size:14px; font-weight:500; color:var(--black); line-height:1.4; font-style:italic;">No, I don't have any allergies.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Nurse records next question -->
+  <div style="padding:10px 20px 10px; background:var(--white); border-top:1px solid var(--separator); display:flex; align-items:center; justify-content:space-between;">
+    <span style="font-size:13px; font-weight:600; color:var(--inactive);">Next question</span>
+    <button class="mic-btn nurse" onclick="show('s2a', document.querySelectorAll('.screen-nav button')[2])">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        <line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
+      </svg>
+    </button>
+  </div>
+  <!-- Language bar -->
+  <div style="padding:6px 16px 8px; background:var(--white); border-top:1px solid var(--separator);">
+    <div class="lang-bar">
+      <button class="lang-btn active-nurse">
+        <span class="flag">🇺🇸</span><span class="lname">English</span><span class="lsub">Speaking</span>
+      </button>
+      <button class="swap-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M7 16V4m0 0L3 8m4-4l4 4"/><path d="M17 8v12m0 0l4-4m-4 4l-4-4"/>
+        </svg>
+      </button>
+      <button class="lang-btn">
+        <span class="flag">🇲🇽</span><span class="lname">Spanish</span><span class="lsub">Output</span>
+      </button>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</div>
+    <div class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>Translate</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Cards</div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════
+  SCREEN 5 — Mode popup
+════════════════════════════════════════════ -->
+<div id="s5" class="screen" style="position:relative;">
+  <div style="filter:blur(3px); opacity:0.3; pointer-events:none; flex:1; display:flex; flex-direction:column;">
+    <div class="status-bar"><span class="time">9:41</span></div>
+    <div style="padding:6px 16px 14px;">
+      <div class="lang-bar">
+        <div class="lang-btn active-nurse"><span class="flag">🇺🇸</span><span class="lname">English</span></div>
+        <div class="swap-btn"></div>
+        <div class="lang-btn"><span class="flag">🇲🇽</span><span class="lname">Spanish</span></div>
+      </div>
+    </div>
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;">
+      <p style="font-size:15px;font-weight:500;color:var(--inactive);">Tap the mic to start speaking.</p>
+    </div>
+  </div>
+  <div style="position:absolute;inset:0;background:rgba(0,0,0,0.35);z-index:10;display:flex;align-items:flex-end;">
+    <div style="background:var(--white);border-radius:24px 24px 0 0;padding:20px 20px 36px;width:100%;">
+      <div style="width:36px;height:4px;background:var(--separator);border-radius:2px;margin:0 auto 18px;"></div>
+      <div style="font-size:18px;font-weight:800;color:var(--black);margin-bottom:4px;">Recording mode</div>
+      <div style="font-size:13px;color:var(--inactive);font-weight:500;margin-bottom:18px;line-height:1.5;">Controls how recording ends. Saved for your next session.</div>
+
+      <div id="card-timer" style="border-radius:14px;border:2px solid var(--blue);background:var(--blue-light);padding:16px;margin-bottom:10px;cursor:pointer;display:flex;align-items:flex-start;gap:14px;position:relative;" onclick="selectMode('timer')">
+        <div style="position:absolute;top:14px;right:14px;width:22px;height:22px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:white;" id="check-timer">✓</div>
+        <div style="width:44px;height:44px;border-radius:12px;background:var(--white);color:var(--blue);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+        </div>
+        <div>
+          <div style="font-size:15px;font-weight:800;color:var(--black);margin-bottom:3px;">Timer</div>
+          <div style="font-size:13px;font-weight:500;color:#1E7EA1;line-height:1.5;">Recording auto-stops after a countdown. Ends early on silence.</div>
+          <span style="display:inline-block;margin-top:7px;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:var(--blue);color:white;">10 seconds max</span>
+        </div>
+      </div>
+
+      <div id="card-chars" style="border-radius:14px;border:2px solid var(--separator);background:var(--white);padding:16px;margin-bottom:0;cursor:pointer;display:flex;align-items:flex-start;gap:14px;position:relative;" onclick="selectMode('chars')">
+        <div style="position:absolute;top:14px;right:14px;width:22px;height:22px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:white;display:none;" id="check-chars">✓</div>
+        <div style="width:44px;height:44px;border-radius:12px;background:var(--backdrop);color:var(--green);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="10" x2="16" y2="10"/><line x1="4" y1="14" x2="20" y2="14"/><line x1="4" y1="18" x2="13" y2="18"/></svg>
+        </div>
+        <div>
+          <div style="font-size:15px;font-weight:800;color:var(--black);margin-bottom:3px;">Character count</div>
+          <div style="font-size:13px;font-weight:500;color:var(--inactive);line-height:1.5;">Recording continues naturally. Ends on silence or at limit.</div>
+          <span style="display:inline-block;margin-top:7px;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:var(--separator);color:var(--inactive);">750 characters max</span>
+        </div>
+      </div>
+
+      <button id="sheet-cta" style="width:100%;padding:15px;border-radius:100px;border:none;font-family:var(--font);font-size:16px;font-weight:800;color:white;cursor:pointer;background:var(--blue);margin-top:14px;" onclick="show('s1a', document.querySelectorAll('.screen-nav button')[0])">
+        Use Timer mode
+      </button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /phone -->
+
+<!-- Annotations -->
+<div id="ann-s2a" class="ann show">
+  <h4>2A · Timer recording in progress</h4>
+  <ul>
+    <li>Only the input language panel — no split screen during recording</li>
+    <li>Live transcript fills top-down as words are captured</li>
+    <li>Rec dot pulses in the language label — subtle "recording" signal</li>
+    <li>Ring depletes around the stop button — green → amber → red as time runs out</li>
+    <li>Shown at 7s elapsed (amber, 3s left) — urgency visible without panic text</li>
+    <li>Waveform shows active audio pickup — both nurse and patient can see it's working</li>
+    <li>Swap is dimmed/locked — no accidental language switch mid-utterance</li>
+    <li>"Tap stop or wait for silence" — explains both exit paths</li>
+  </ul>
+</div>
+<div id="ann-s2b1" class="ann">
+  <h4>2B-1 · Bar on top — lightest touch</h4>
+  <ul>
+    <li>Thin 4px strip pinned flush under the status bar — like a browser loading bar</li>
+    <li>Green fills from left: 41.6% at 312/750 chars, turns amber ~65%, red ~85%</li>
+    <li>Everything else on screen stays completely clean — transcript, waveform, stop button</li>
+    <li>Stop button sits bottom-right (same thumb zone as resting mic in 1B), no ring chrome</li>
+    <li>"438 chars left" label sits to the left of the stop button — readable, out of the way</li>
+    <li>Works for time too: timer mode could use the same top bar, same language</li>
+  </ul>
+</div>
+<div id="ann-s2b2" class="ann">
+  <h4>2B-2 · Control card — clear zone separation</h4>
+  <ul>
+    <li>Hard boundary: transcript content above the card line, controls below it</li>
+    <li>Card groups everything: pulsing dot, "LISTENING" label, "438 chars left", waveform, stop</li>
+    <li>No ring on stop button — clean, uncluttered, easy to hit at bedside</li>
+    <li>Card lifts slightly with shadow — feels like a persistent recording toolbar</li>
+    <li>Transcript has maximum room to grow before it touches the card edge</li>
+    <li>Closest to your sketch concept</li>
+  </ul>
+</div>
+<div id="ann-s2b3" class="ann">
+  <h4>2B-3 · Speech bubble + bar — content-first</h4>
+  <ul>
+    <li>Transcript lives inside a speech bubble (green-tinted, soft border, bubble tail)</li>
+    <li>Progress bar runs along the bottom edge of the bubble — fills green from left</li>
+    <li>At 41.6% used the bar is just under half — still clearly lots of space to speak</li>
+    <li>Waveform and plain stop button sit below the bubble, grounded and easy to find</li>
+    <li>The bubble visually frames "your words" as a conversation object</li>
+    <li>More visually distinctive — reinforces that Vocalis is a conversation tool, not just a recorder</li>
+  </ul>
+</div>
+<div id="ann-res_1" class="ann">
+  <h4>1 · Unequal zones — translation dominant</h4>
+  <ul>
+    <li>Spanish/translation gets ~2/3 of screen height — reflects that it's the primary reading matter</li>
+    <li>Timer (speed) + Play live in the Spanish zone, bottom-right — close to the text, no hunt</li>
+    <li>Mic button is anchored inside the English zone (bottom-right) — natural for the nurse's thumb</li>
+    <li>Edit button in English header — nurse can correct before or after patient reads</li>
+    <li>Language bar at very bottom — tap ↕ to hand off to patient (goes to patient turn screen)</li>
+    <li>Proportions signal importance: patient's translation is the star</li>
+  </ul>
+</div>
+<div id="ann-res_2" class="ann">
+  <h4>2 · Center ↑↓ button — ergonomic handoff</h4>
+  <ul>
+    <li>Equal halves: Spanish top (translation), English bottom (original)</li>
+    <li>The ↑↓ button physically sits on the divider — visually obvious, one thumb reach from either zone</li>
+    <li>Timer + Play top-right of Spanish zone — same position as sketch</li>
+    <li>Mic at absolute bottom center — after switching language, the patient/nurse just taps it</li>
+    <li>No separate language bar needed — the center button IS the language switch</li>
+    <li>Designed for thumb ergonomics: middle tap + bottom tap = full handoff gesture</li>
+  </ul>
+</div>
+<div id="ann-res_3a" class="ann">
+  <h4>3A · Nurse just spoke — English zone highlighted</h4>
+  <ul>
+    <li>English zone (bottom) shows light blue highlight + blue left border — signals "this is where the nurse just recorded"</li>
+    <li>Spanish zone (top) shows the translation — nurse can verify accuracy before handing to patient</li>
+    <li>Timer + Play on the Spanish zone — nurse can replay the Spanish audio for the patient</li>
+    <li>Edit button on English zone — nurse corrects her original before the patient sees the translation</li>
+    <li>Spanish zone is fully tappable with a "Patient — tap here" strip at the bottom → navigates to 3B</li>
+    <li>No language switching needed — positions are fixed, hand gesture alone signals the turn change</li>
+  </ul>
+</div>
+<div id="ann-res_3b" class="ann">
+  <h4>3B · Patient recording — timer pill straddles divider</h4>
+  <ul>
+    <li>Spanish zone active: warm border + amber pulsing dot + PATIENT badge — unmistakably the patient's turn</li>
+    <li>Live transcript builds in the Spanish zone as the patient speaks</li>
+    <li>Recording pill [⏱ 7s left · ■ stop] sits on the divider — both participants can see the timer</li>
+    <li>English zone dimmed (opacity 0.5) + NURSE badge — nurse sees her previous text, non-interactive</li>
+    <li>Stop button inside the pill ends recording → moves to 3C result state</li>
+    <li>Timer auto-ends recording when it hits 0; stop button provides manual exit</li>
+  </ul>
+</div>
+<div id="ann-res_3c" class="ann">
+  <h4>3C · Patient done — Spanish highlighted, English shows translation</h4>
+  <ul>
+    <li>Spanish zone now highlighted with warm left border + warm tint — mirrors how English zone looked in 3A</li>
+    <li>Patient's Spanish text stays visible in their zone — they can see what was recorded</li>
+    <li>Timer + Play on Spanish zone — nurse can replay patient's audio if needed</li>
+    <li>English zone shows the English translation of the patient's response — nurse reads this</li>
+    <li>Edit button on English zone — nurse can correct the translation if needed</li>
+    <li>"Nurse — tap here to ask next question" strip → loops back to 3A for the next exchange</li>
+  </ul>
+</div>
+<div id="ann-s_edit" class="ann">
+  <h4>Edit mode — inline text correction</h4>
+  <ul>
+    <li>Translation zone stays visible but dimmed — nurse can see what she's correcting</li>
+    <li>Blue top border on edit zone — signals an active editing state</li>
+    <li>Cancel / Done buttons in header — same position as a standard modal toolbar</li>
+    <li>Blinking cursor in the text — makes the editable state unambiguous</li>
+    <li>"Retranslate" option appears after editing — nurse can update the Spanish without re-recording</li>
+    <li>Keyboard placeholder shows where the system keyboard would push the layout up</li>
+  </ul>
+</div>
+<div id="ann-s4" class="ann">
+  <h4>4 · Patient's turn — full green, text reset, language flipped</h4>
+  <ul>
+    <li>Previous nurse exchange dimmed at top (opacity 0.4) — shows context but steps back</li>
+    <li>The question stays visible in Spanish so the patient sees exactly what was asked</li>
+    <li>Language reset is immediate: no stale text lingers in the patient zone</li>
+    <li>Language bar flipped to ES→EN — Spanish is now "Speaking", English is "Output"</li>
+    <li>Green mic in center: patient doesn't need to hunt for a button — just tap the big mic</li>
+    <li>"Listening…" + pulsing dot plays the same feedback pattern as the nurse's recording state</li>
+    <li>Mic button navigates to 3B (conversation thread) — simulating the response being recorded</li>
+  </ul>
+</div>
+<div id="ann-s_conv" class="ann">
+  <h4>Thread · Conversation — stacked exchange cards</h4>
+  <ul>
+    <li>Each turn is a self-contained card: header with speaker dot + label, main text, tinted translation strip</li>
+    <li>Nurse card (blue border) left-aligned; patient card (green border) indented right — chat-thread feel</li>
+    <li>Inline translation strips (blue-light / green-light) show both languages inside the same card</li>
+    <li>Edit pill on nurse card only — nurse can correct her own wording after seeing the exchange</li>
+    <li>Thread area is scrollable (overflow-y:auto) — grows naturally as the conversation lengthens</li>
+    <li>Bottom dock: "Next question" label + blue mic — nurse taps to start a new round → back to 2A</li>
+  </ul>
+</div>
+
+<script>
+function show(id, btn) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.screen-nav button').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  document.querySelectorAll('.ann').forEach(a => a.classList.remove('show'));
+  const map = { s1a:null, s1b:null, s2a:'ann-s2a', s2b1:'ann-s2b1', s2b2:'ann-s2b2', s2b3:'ann-s2b3', res_1:'ann-res_1', res_2:'ann-res_2', res_3a:'ann-res_3a', res_3b:'ann-res_3b', res_3c:'ann-res_3c', s_edit:'ann-s_edit', s4:'ann-s4', s_conv:'ann-s_conv', s5:null, res_4:'ann-res_4', res_5:'ann-res_5', res_6:'ann-res_6', res_7_0:null, res_7_1:'ann-res_7_1', res_7_2:'ann-res_7_2', res_7_3:'ann-res_7_3', res_7_4:'ann-res_7_4', res_8_0:null, res_8_1:'ann-res_8_1', res_8_2:'ann-res_8_2', res_8_3:'ann-res_8_3', res_8_4:'ann-res_8_4' };
+  if (map[id]) document.getElementById(map[id]).classList.add('show');
+}
+
+function selectMode(mode) {
+  const tc = document.getElementById('card-timer');
+  const cc = document.getElementById('card-chars');
+  const ctimer = document.getElementById('check-timer');
+  const cchars = document.getElementById('check-chars');
+  const cta = document.getElementById('sheet-cta');
+
+  if (mode === 'timer') {
+    tc.style.border = '2px solid var(--blue)';
+    tc.style.background = 'var(--blue-light)';
+    ctimer.style.display = 'flex';
+    cc.style.border = '2px solid var(--separator)';
+    cc.style.background = 'var(--white)';
+    cchars.style.display = 'none';
+    // update char card icon bg
+    cc.querySelector('div').style.background = 'var(--backdrop)';
+    cta.textContent = 'Use Timer mode';
+    cta.style.background = 'var(--blue)';
+  } else {
+    cc.style.border = '2px solid var(--green)';
+    cc.style.background = 'var(--green-light)';
+    cchars.style.display = 'flex';
+    tc.style.border = '2px solid var(--separator)';
+    tc.style.background = 'var(--white)';
+    ctimer.style.display = 'none';
+    cta.textContent = 'Use Character mode';
+    cta.style.background = 'var(--green)';
+  }
+}
+
+// Default to 2A on load
+show('s2a', document.querySelectorAll('.screen-nav button')[2]);
+</script>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     CONCEPT 4 · DOMINANT — 70/30 language size split
+     Spanish translation takes ~70% of screen; English is a 
+     compact strip at the bottom. Size itself is the affordance.
+     ══════════════════════════════════════════════════════════ -->
+<div class="phone" style="margin-top:40px;">
+<div id="res_4" class="screen" style="flex-direction:column; background:var(--white);">
+
+  <div class="status-bar"><span class="time">9:41</span>
+    <div style="display:flex;gap:5px;align-items:center;">
+      <svg width="16" height="12" viewBox="0 0 16 12"><rect x="0" y="3" width="3" height="9" rx="1" fill="#1A1A1A"/><rect x="4.5" y="2" width="3" height="10" rx="1" fill="#1A1A1A"/><rect x="9" y="0" width="3" height="12" rx="1" fill="#1A1A1A"/><rect x="13.5" y="0" width="2.5" height="12" rx="1" fill="#E4E4E4"/></svg>
+      <svg width="16" height="12" viewBox="0 0 24 12"><rect x="0" y="3" width="21" height="9" rx="2" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><rect x="21.5" y="5" width="2" height="5" rx="1" fill="#1A1A1A"/><rect x="1.5" y="4.5" width="15" height="6" rx="1" fill="#1A1A1A"/></svg>
+    </div>
+  </div>
+
+  <!-- Spanish dominant zone (~70%) -->
+  <div style="flex:3; display:flex; flex-direction:column; padding:18px 22px 0; border-bottom:1.5px solid var(--separator);">
+    <!-- Zone header -->
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:18px;">🇲🇽</span>
+        <span style="font-size:11px; font-weight:800; color:var(--inactive); letter-spacing:0.07em;">SPANISH · TRANSLATION</span>
+      </div>
+      <div style="display:flex; gap:6px;">
+        <button style="border:1.5px solid var(--separator); border-radius:20px; padding:5px 12px; background:var(--white); font-family:var(--font); font-size:11px; font-weight:700; color:var(--inactive); cursor:pointer; display:flex; align-items:center; gap:5px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>1x</button>
+        <button style="border:1.5px solid var(--separator); border-radius:20px; padding:5px 12px; background:var(--white); font-family:var(--font); font-size:11px; font-weight:700; color:var(--black); cursor:pointer; display:flex; align-items:center; gap:5px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>Play</button>
+      </div>
+    </div>
+    <!-- Large translation -->
+    <p style="font-size:38px; font-weight:800; color:var(--black); line-height:1.2; flex:1;">¿Tiene alguna alergia a algún medicamento?</p>
+    <!-- Tap strip at bottom of dominant zone -->
+    <div onclick="show('res_3b', document.querySelectorAll('.screen-nav button')[9])"
+         style="margin:0 -22px; padding:14px 22px; display:flex; align-items:center; justify-content:space-between; background:var(--backdrop); border-top:1px solid var(--separator); cursor:pointer;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--inactive)" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        <span style="font-size:13px; font-weight:600; color:var(--inactive);">Patient — tap here to respond in Spanish</span>
+      </div>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--inactive)" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+  </div>
+
+  <!-- English compact strip (~30%) -->
+  <div style="flex:1.1; display:flex; flex-direction:column; padding:14px 22px; background:var(--backdrop);">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:9px;">
+      <div style="display:flex; align-items:center; gap:7px;">
+        <span style="font-size:14px;">🇺🇸</span>
+        <span style="font-size:11px; font-weight:800; color:var(--blue); letter-spacing:0.07em;">ENGLISH · JUST RECORDED</span>
+        <span style="width:7px; height:7px; border-radius:50%; background:var(--blue); display:inline-block;"></span>
+      </div>
+      <button style="border:none; background:none; cursor:pointer; display:flex; align-items:center; gap:4px; font-family:var(--font); font-size:12px; font-weight:700; color:var(--inactive);">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit
+      </button>
+    </div>
+    <p style="font-size:18px; font-weight:600; color:var(--black); line-height:1.4;">Does he have any allergies to medication?</p>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Home</span></button>
+    <button class="tab-btn active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg><span>Translate</span></button>
+    <button class="tab-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span>Cards</span></button>
+  </div>
+</div><!-- /res_4 -->
+</div><!-- /phone -->
+
+<div id="ann-res_4" class="ann" style="max-width:390px; width:100%; margin-top:16px; display:none;">
+  <div class="ann-title">4 · DOMINANT — 70/30 SIZE SPLIT</div>
+  <ul class="ann-list">
+    <li>Spanish translation at 38px fills ~70% of screen — readable across a hospital bed without needing to lean in</li>
+    <li>Size is the only affordance needed — no labels telling the patient "this is for you"</li>
+    <li>Tap strip sits at the base of the Spanish zone, always reachable regardless of phone orientation</li>
+    <li>English strip shrinks to a compact label — nurse can still verify and edit, but it's clearly secondary</li>
+    <li>Backdrop tint on English zone reinforces its secondary status without hiding it</li>
+    <li>No split-equal tension — one side is clearly dominant at any given moment</li>
+  </ul>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     CONCEPT 5 · CARD — translation as a floating notecard
+     No zones. The translation appears as a single card with 
+     shadow. Original sits below, dimmed. Big green CTA.
+     ══════════════════════════════════════════════════════════ -->
+<div class="phone" style="margin-top:40px;">
+<div id="res_5" class="screen" style="flex-direction:column; background:#EFEFEF;">
+
+  <div class="status-bar" style="background:#EFEFEF;"><span class="time">9:41</span>
+    <div style="display:flex;gap:5px;align-items:center;">
+      <svg width="16" height="12" viewBox="0 0 16 12"><rect x="0" y="3" width="3" height="9" rx="1" fill="#1A1A1A"/><rect x="4.5" y="2" width="3" height="10" rx="1" fill="#1A1A1A"/><rect x="9" y="0" width="3" height="12" rx="1" fill="#1A1A1A"/><rect x="13.5" y="0" width="2.5" height="12" rx="1" fill="#E4E4E4"/></svg>
+      <svg width="16" height="12" viewBox="0 0 24 12"><rect x="0" y="3" width="21" height="9" rx="2" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><rect x="21.5" y="5" width="2" height="5" rx="1" fill="#1A1A1A"/><rect x="1.5" y="4.5" width="15" height="6" rx="1" fill="#1A1A1A"/></svg>
+    </div>
+  </div>
+
+  <!-- Header: context breadcrumb -->
+  <div style="padding:8px 22px 0; background:#EFEFEF; display:flex; align-items:center; justify-content:space-between;">
+    <div style="display:flex; align-items:center; gap:6px;">
+      <span style="font-size:13px; font-weight:700; color:#888;">🇺🇸 EN</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+      <span style="font-size:13px; font-weight:800; color:var(--black);">🇲🇽 ES</span>
+    </div>
+    <span style="font-size:11px; font-weight:700; color:#888; letter-spacing:0.05em;">NURSE SPOKE</span>
+  </div>
+
+  <!-- Spacer -->
+  <div style="flex:0.5; background:#EFEFEF;"></div>
+
+  <!-- Floating card -->
+  <div style="margin:0 18px; background:var(--white); border-radius:22px; box-shadow:0 10px 40px rgba(0,0,0,0.14); overflow:hidden; flex:1; display:flex; flex-direction:column; max-height:400px;">
+    <!-- Card top bar -->
+    <div style="padding:16px 20px 12px; border-bottom:1px solid var(--separator); display:flex; align-items:center; justify-content:space-between; background:var(--white);">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:17px;">🇲🇽</span>
+        <span style="font-size:11px; font-weight:800; color:var(--inactive); letter-spacing:0.07em;">SPANISH TRANSLATION</span>
+      </div>
+      <div style="display:flex; gap:6px;">
+        <button style="border:1.5px solid var(--separator); border-radius:20px; padding:5px 11px; background:var(--white); font-family:var(--font); font-size:11px; font-weight:700; color:var(--inactive); cursor:pointer; display:flex; align-items:center; gap:4px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>1x</button>
+        <button style="border:1.5px solid var(--separator); border-radius:20px; padding:5px 11px; background:var(--white); font-family:var(--font); font-size:11px; font-weight:700; color:var(--black); cursor:pointer; display:flex; align-items:center; gap:4px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>Play</button>
+      </div>
+    </div>
+    <!-- Card body: big translation text -->
+    <div style="flex:1; padding:24px 22px 20px; background:var(--white);">
+      <p style="font-size:34px; font-weight:800; color:var(--black); line-height:1.25;">¿Tiene alguna alergia a algún medicamento?</p>
+    </div>
+  </div>
+
+  <!-- English original (below card, dimmed) -->
+  <div style="margin:14px 18px 0; padding:12px 16px; background:rgba(255,255,255,0.6); border-radius:14px; display:flex; align-items:flex-start; gap:10px;">
+    <span style="font-size:14px; opacity:0.6;">🇺🇸</span>
+    <div style="flex:1;">
+      <div style="font-size:10px; font-weight:800; color:var(--inactive); letter-spacing:0.07em; margin-bottom:3px;">ORIGINAL ENGLISH</div>
+      <div style="font-size:15px; color:var(--black); opacity:0.65;">Does he have any allergies to medication?</div>
+    </div>
+    <button style="border:none; background:none; cursor:pointer; padding:2px; opacity:0.5;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--inactive)" stroke-width="2.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    </button>
+  </div>
+
+  <!-- Spacer -->
+  <div style="flex:0.4; background:#EFEFEF;"></div>
+
+  <!-- Big green CTA -->
+  <div style="padding:0 18px 18px; background:#EFEFEF;">
+    <button onclick="show('res_3b', document.querySelectorAll('.screen-nav button')[9])"
+            style="width:100%; padding:18px 20px; background:var(--green); border:none; border-radius:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:12px; font-family:var(--font); box-shadow:0 4px 20px rgba(57,173,87,0.35);">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      <span style="font-size:17px; font-weight:800; color:white;">Patient — tap to respond</span>
+    </button>
+  </div>
+
+  <div class="tab-bar" style="background:var(--white);">
+    <button class="tab-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Home</span></button>
+    <button class="tab-btn active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg><span>Translate</span></button>
+    <button class="tab-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span>Cards</span></button>
+  </div>
+</div><!-- /res_5 -->
+</div><!-- /phone -->
+
+<div id="ann-res_5" class="ann" style="max-width:390px; width:100%; margin-top:16px; display:none;">
+  <div class="ann-title">5 · CARD — FLOATING NOTECARD METAPHOR</div>
+  <ul class="ann-list">
+    <li>No zones — translation appears as a single floating card, like a physical notecard you'd hold up to show someone</li>
+    <li>Grey backdrop recedes so the card is the only focus — patient reads the card, ignores the rest of the screen</li>
+    <li>English original sits below the card, partially transparent — nurse can see it but the patient won't fixate on it</li>
+    <li>Green CTA at the bottom is the only action — removes any ambiguity about what to do next</li>
+    <li>Card can grow taller for long text — the backdrop accommodates variable content naturally</li>
+    <li>Works well for one-handed use: nurse holds phone, tilts it, patient reads, taps the green button</li>
+  </ul>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     CONCEPT 6 · DOCK — persistent bottom recording control
+     Equal content zones (read-only). All recording lives in a 
+     fixed bottom dock: always in the thumb zone, never moves.
+     ══════════════════════════════════════════════════════════ -->
+<div class="phone" style="margin-top:40px;">
+<div id="res_6" class="screen" style="flex-direction:column; background:var(--white);">
+
+  <div class="status-bar"><span class="time">9:41</span>
+    <div style="display:flex;gap:5px;align-items:center;">
+      <svg width="16" height="12" viewBox="0 0 16 12"><rect x="0" y="3" width="3" height="9" rx="1" fill="#1A1A1A"/><rect x="4.5" y="2" width="3" height="10" rx="1" fill="#1A1A1A"/><rect x="9" y="0" width="3" height="12" rx="1" fill="#1A1A1A"/><rect x="13.5" y="0" width="2.5" height="12" rx="1" fill="#E4E4E4"/></svg>
+      <svg width="16" height="12" viewBox="0 0 24 12"><rect x="0" y="3" width="21" height="9" rx="2" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><rect x="21.5" y="5" width="2" height="5" rx="1" fill="#1A1A1A"/><rect x="1.5" y="4.5" width="15" height="6" rx="1" fill="#1A1A1A"/></svg>
+    </div>
+  </div>
+
+  <!-- Spanish zone — read only, ~38% -->
+  <div style="flex:1.8; display:flex; flex-direction:column; padding:16px 22px 14px; border-bottom:1px solid var(--separator);">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+      <div style="display:flex; align-items:center; gap:7px;">
+        <span style="font-size:16px;">🇲🇽</span>
+        <span style="font-size:11px; font-weight:800; color:var(--inactive); letter-spacing:0.07em;">SPANISH · TRANSLATION</span>
+      </div>
+      <div style="display:flex; gap:6px;">
+        <button style="border:1.5px solid var(--separator); border-radius:20px; padding:4px 10px; background:var(--white); font-family:var(--font); font-size:11px; font-weight:700; color:var(--inactive); cursor:pointer; display:flex; align-items:center; gap:4px;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>1x</button>
+        <button style="border:1.5px solid var(--separator); border-radius:20px; padding:4px 10px; background:var(--white); font-family:var(--font); font-size:11px; font-weight:700; color:var(--black); cursor:pointer; display:flex; align-items:center; gap:4px;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>Play</button>
+      </div>
+    </div>
+    <p style="font-size:26px; font-weight:800; color:var(--black); line-height:1.3;">¿Tiene alguna alergia a algún medicamento?</p>
+  </div>
+
+  <!-- English zone — read only, ~38% -->
+  <div style="flex:1.8; display:flex; flex-direction:column; padding:16px 22px 14px; border-bottom:2px solid var(--separator);">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+      <div style="display:flex; align-items:center; gap:7px;">
+        <span style="font-size:16px;">🇺🇸</span>
+        <span style="font-size:11px; font-weight:800; color:var(--blue); letter-spacing:0.07em;">ENGLISH · JUST RECORDED</span>
+        <span style="width:7px; height:7px; border-radius:50%; background:var(--blue); display:inline-block;"></span>
+      </div>
+      <button style="border:none; background:none; cursor:pointer; display:flex; align-items:center; gap:4px; font-family:var(--font); font-size:12px; font-weight:700; color:var(--inactive);">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit
+      </button>
+    </div>
+    <p style="font-size:26px; font-weight:800; color:var(--black); line-height:1.3;">Does he have any allergies to medication?</p>
+  </div>
+
+  <!-- Persistent bottom dock -->
+  <div style="flex:1; background:var(--white); padding:14px 22px 10px; box-shadow:0 -2px 16px rgba(0,0,0,0.07); display:flex; flex-direction:column; justify-content:center;">
+    <!-- Turn indicator -->
+    <div style="text-align:center; margin-bottom:14px;">
+      <span style="font-size:12px; font-weight:700; color:var(--inactive);">Patient's turn · speak in</span>
+      <span style="font-size:12px; font-weight:800; color:var(--black);"> Spanish 🇲🇽</span>
+    </div>
+    <!-- Three-column controls -->
+    <div style="display:flex; align-items:center; justify-content:space-between;">
+      <!-- Left: current speaker info -->
+      <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;">
+        <div style="width:40px; height:40px; border-radius:50%; background:#FFF8E8; border:1.5px solid rgba(154,122,16,0.3); display:flex; align-items:center; justify-content:center; font-size:19px;">🇲🇽</div>
+        <span style="font-size:10px; font-weight:700; color:var(--inactive);">Patient / ES</span>
+      </div>
+      <!-- Center: big mic -->
+      <button onclick="show('res_3b', document.querySelectorAll('.screen-nav button')[9])"
+              style="width:74px; height:74px; border-radius:50%; background:var(--green); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 20px rgba(57,173,87,0.38); flex-shrink:0;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      </button>
+      <!-- Right: switch button -->
+      <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;">
+        <button style="width:40px; height:40px; border-radius:50%; background:var(--backdrop); border:1.5px solid var(--separator); cursor:pointer; display:flex; align-items:center; justify-content:center;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--inactive)" stroke-width="2.5" stroke-linecap="round"><path d="M7 16V4m0 0L3 8m4-4l4 4"/><path d="M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
+        </button>
+        <span style="font-size:10px; font-weight:700; color:var(--inactive);">Switch</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Home</span></button>
+    <button class="tab-btn active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg><span>Translate</span></button>
+    <button class="tab-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span>Cards</span></button>
+  </div>
+</div><!-- /res_6 -->
+</div><!-- /phone -->
+
+<div id="ann-res_6" class="ann" style="max-width:390px; width:100%; margin-top:16px; display:none;">
+  <div class="ann-title">6 · DOCK — PERSISTENT BOTTOM RECORDING CONTROLS</div>
+  <ul class="ann-list">
+    <li>Zones are purely for reading — no tapping needed in the content areas, no confusion about what's interactive</li>
+    <li>All recording lives in the bottom dock — always in the same thumb-zone location, completely predictable</li>
+    <li>Dock shows speaker context and language before the nurse hands the phone over</li>
+    <li>"Switch" button deliberately separated from the mic — avoids accidentally switching during recording</li>
+    <li>Mic button is 74px and centered — easy target for a patient who's unfamiliar with the app</li>
+    <li>Dock can be color-coded: green mic = patient's turn, blue mic = nurse's turn</li>
+    <li>Combines well with fixed-zones concept — same spatial layout, different interaction model</li>
+  </ul>
+</div>
+
+<div class="phone" style="margin-top:40px;">
+<div id="res_7_0" class="screen" style="flex-direction:column; background:var(--white);">
+
+  <div class="status-bar"><span class="time">9:41</span>
+    <div style="display:flex;gap:5px;align-items:center;"><svg width="16" height="12" viewBox="0 0 16 12"><rect x="0" y="3" width="3" height="9" rx="1" fill="#1A1A1A"/><rect x="4.5" y="2" width="3" height="10" rx="1" fill="#1A1A1A"/><rect x="9" y="0" width="3" height="12" rx="1" fill="#1A1A1A"/><rect x="13.5" y="0" width="2.5" height="12" rx="1" fill="#E4E4E4"/></svg><svg width="16" height="12" viewBox="0 0 24 12"><rect x="0" y="3" width="21" height="9" rx="2" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><rect x="21.5" y="5" width="2" height="5" rx="1" fill="#1A1A1A"/><rect x="1.5" y="4.5" width="15" height="6" rx="1" fill="#1A1A1A"/></svg></div>
+  </div>
+
+  <div style="flex:1.2; display:flex; flex-direction:column; padding:18px 22px 16px; border-bottom:1px solid var(--separator);">
+    <div style="display:flex; align-items:center; gap:7px; margin-bottom:16px;">
+      <span style="font-size:16px;">🇲🇽</span>
+      <span style="font-size:11px; font-weight:800; color:var(--inactive); letter-spacing:0.07em;">PATIENT · SPANISH</span>
+    </div>
+    <p style="font-size:18px; font-weight:600; color:var(--separator);">Translation will appear here</p>
+  </div>
+
+  <div style="flex:1; display:flex; flex-direction:column; padding:18px 22px 16px;">
+    <div style="display:flex; align-items:center; gap:7px; margin-bottom:16px;">
+      <span style="font-size:16px;">🇺🇸</span>
+      <span style="font-size:11px; font-weight:800; color:var(--inactive); letter-spacing:0.07em;">NURSE · ENGLISH</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; opacity:0.5;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--inactive)" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      <p style="font-size:14px; font-weight:600; color:var(--inactive); text-align:center;">Tap the mic below to start speaking</p>
+    </div>
+  </div>
+
+  <div style="padding:12px 22px 14px; border-top:1.5px solid var(--separator); background:var(--white); box-shadow:0 -2px 10px rgba(0,0,0,0.05); display:flex; align-items:center; justify-content:space-between;">
+    <button style="display:flex; align-items:center; gap:7px; padding:10px 16px; border:1.5px solid var(--separator); border-radius:22px; background:var(--white); font-family:var(--font); cursor:pointer; flex-shrink:0;"><span style="font-size:15px;">🇺🇸</span><span style="font-size:13px; font-weight:800; color:var(--black);">EN</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--inactive)" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg><span style="font-size:13px; font-weight:700; color:var(--inactive);">ES</span><span style="font-size:15px;">🇲🇽</span></button>
+    <button onclick="show('res_7_1',document.querySelectorAll('.screen-nav button')[19])" style="width:54px; height:54px; border-radius:50%; background:var(--green); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 14px rgba(57,173,87,0.30); flex-shrink:0;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Home</span></button>
+    <button class="tab-btn active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg><span>Translate</span></button>
+    <button class="tab-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span>Cards</span></button>
+  </div>
+
+</div><!-- /res_7_0 -->
+</div><!-- /phone -->
+
+<div class="phone" style="margin-top:40px;">
+<div id="res_7_1" class="screen" style="flex-direction:column; background:var(--white);">
+
+  <div class="status-bar"><span class="time">9:41</span>
+    <div style="display:flex;gap:5px;align-items:center;"><svg width="16" height="12" viewBox="0 0 16 12"><rect x="0" y="3" width="3" height="9" rx="1" fill="#1A1A1A"/><rect x="4.5" y="2" width="3" height="10" rx="1" fill="#1A1A1A"/><rect x="9" y="0" width="3" height="12" rx="1" fill="#1A1A1A"/><rect x="13.5" y="0" width="2.5" height="12" rx="1" fill="#E4E4E4"/></svg><svg width="16" height="12" viewBox="0 0 24 12"><rect x="0" y="3" width="21" height="9" rx="2" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><rect x="21.5" y="5" width="2" height="5" rx="1" fill="#1A1A1A"/><rect x="1.5" y="4.5" width="15" height="6" rx="1" fill="#1A1A1A"/></svg></div>
+  </div>
+
+  <div style="flex:1.8; display:flex; flex-direction:column; padding:16px 22px 14px; border-bottom:1px solid var(--separator);">
+    <div style="display:flex; align-items:center; gap:7px; margin-bottom:14px;">
+      <span style="font-size:16px;">🇲🇽</span>
+      <span style="font-size:11px; font-weight:800; color:var(--inactive); letter-spacing:0.07em;">SPANISH · TRANSLATION</span>
+    </div>
+    <p style="font-size:20px; font-weight:600; color:var(--separator);">Translating…</p>
+  </div>
+
+  <div style="height:0; position:relative; z-index:10; display:flex; align-items:center; justify-content:center;">
+    <div style="position:absolute; top:-20px; display:flex; align-items:center; gap:10px; background:var(--white); border:2px solid var(--separator); padding:7px 16px 7px 14px; border-radius:28px; box-shadow:0 2px 14px rgba(0,0,0,0.10);">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span style="font-size:12px; font-weight:700; color:var(--black);">28s left</span>
+      <button onclick="show('res_7_2',document.querySelectorAll('.screen-nav button')[20])" style="width:26px; height:26px; border-radius:50%; background:var(--red); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center;"><svg width="10" height="10" viewBox="0 0 24 24" fill="white"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></button>
+    </div>
+  </div>
+
+  <div style="flex:1; display:flex; flex-direction:column; padding:14px 22px 12px; background:var(--blue-light); border-left:3px solid var(--blue);">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex-shrink:0;">
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span style="width:8px; height:8px; border-radius:50%; background:var(--amber); display:inline-block;"></span>
+        <span style="font-size:16px;">🇺🇸</span>
+        <span style="font-size:11px; font-weight:800; color:var(--blue); letter-spacing:0.07em;">ENGLISH · RECORDING</span>
+      </div>
+      <span style="font-size:11px; font-weight:800; padding:3px 10px; background:var(--blue); color:white; border-radius:12px; letter-spacing:0.04em;">NURSE</span>
+    </div>
+    <p style="font-size:20px; font-weight:700; color:var(--black); line-height:1.4; flex:1;">Does he have any allergies to medication?<span style="opacity:0.35; font-weight:400;">|</span></p>
+  </div>
+
+  <div style="padding:12px 22px 14px; border-top:1.5px solid var(--separator); background:var(--white); box-shadow:0 -2px 10px rgba(0,0,0,0.05); display:flex; align-items:center; justify-content:space-between;">
+    <button style="display:flex; align-items:center; gap:7px; padding:10px 16px; border:1.5px solid var(--separator); border-radius:22px; background:var(--white); font-family:var(--font); cursor:pointer; flex-shrink:0;"><span style="font-size:15px;">🇺🇸</span><span style="font-size:13px; font-weight:800; color:var(--black);">EN</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--inactive)" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg><span style="font-size:13px; font-weight:700; color:var(--inactive);">ES</span><span style="font-size:15px;">🇲🇽</span></button>
+    <button style="width:54px; height:54px; border-radius:50%; background:var(--amber); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 14px rgba(245,166,35,0.35); flex-shrink:0;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Home</span></button>
+    <button class="tab-btn active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg><span>Translate</span></button>
+    <button class="tab-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span>Cards</span></button>
+  </div>
+
+</div><!-- /res_7_1 -->
+</div><!-- /phone -->
+
+<div id="ann-res_7_1" class="ann" style="max-width:390px; width:100%; margin-top:16px; display:none;">
+  <div class="ann-title">7·1 · NURSE RECORDING</div>
+  <ul class="ann-list">
+    <li>Nurse zone (bottom, flex:1) is active — blue highlight + left border signal "recording here"</li>
+    <li>Patient zone (top, flex:1.8) is larger but shows "Translating…" — space is reserved for the translation</li>
+    <li>Pill on the divider: ⏱ 28s left + stop — visible from any grip position</li>
+    <li>Amber dot in zone header reinforces recording state without relying on the pill alone</li>
+    <li>Compact bar: Switch | Amber mic (recording indicator) | NURSE/EN — always at thumb-level</li>
+  </ul>
+</div>
+
+<div class="phone" style="margin-top:40px;">
+<div id="res_7_2" class="screen" style="flex-direction:column; background:var(--white);">
+
+  <div class="status-bar"><span class="time">9:41</span>
+    <div style="display:flex;gap:5px;align-items:center;"><svg width="16" height="12" viewBox="0 0 16 12"><rect x="0" y="3" width="3" height="9" rx="1" fill="#1A1A1A"/><rect x="4.5" y="2" width="3" height="10" rx="1" fill="#1A1A1A"/><rect x="9" y="0" width="3" height="12" rx="1" fill="#1A1A1A"/><rect x="13.5" y="0" width="2.5" height="12" rx="1" fill="#E4E4E4"/></svg><svg width="16" height="12" viewBox="0 0 24 12"><rect x="0" y="3" width="21" height="9" rx="2" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><rect x="21.5" y="5" width="2" height="5" rx="1" fill="#1A1A1A"/><rect x="1.5" y="4.5" width="15" height="6" rx="1" fill="#1A1A1A"/></svg></div>
+  </div>
+
+  <div style="flex:1.8; display:flex; flex-direction:column; border-bottom:1px solid var(--separator);">
+    <div style="padding:16px 22px 12px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
+      <div style="display:flex; align-items:center; gap:7px;">
+        <span style="font-size:16px;">🇲🇽</span>
+        <span style="font-size:11px; font-weight:800; color:var(--inactive); letter-spacing:0.07em;">SPANISH · TRANSLATION</span>
+      </div>
+      <div style="display:flex; gap:6px;"><button style="border:1.5px solid var(--separator); border-radius:20px; padding:5px 12px; background:var(--white); font-family:var(--font); font-size:11px; font-weight:700; color:var(--inactive); cursor:pointer; display:flex; align-items:center; gap:4px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 1x</button><button style="border:1.5px solid var(--separator); border-radius:20px; padding:5px 12px; background:var(--white); font-family:var(--font); font-size:11px; font-weight:700; color:var(--black); cursor:pointer; display:flex; align-items:center; gap:4px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> Play</button></div>
+    </div>
+    <div style="flex:1; padding:0 22px 12px;">
+      <p style="font-size:32px; font-weight:800; color:var(--black); line-height:1.25;">¿Tiene alguna alergia a algún medicamento?</p>
+    </div>
+
+  </div>
+
+  <div style="flex:1; display:flex; flex-direction:column; padding:14px 22px 12px; background:var(--blue-light); border-left:3px solid var(--blue);">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex-shrink:0;">
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span style="width:7px; height:7px; border-radius:50%; background:var(--blue); display:inline-block;"></span>
+        <span style="font-size:16px;">🇺🇸</span>
+        <span style="font-size:11px; font-weight:800; color:var(--blue); letter-spacing:0.07em;">ENGLISH · JUST RECORDED</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <button style="display:flex; align-items:center; gap:4px; border:none; background:none; cursor:pointer; font-family:var(--font); font-size:12px; font-weight:700; color:var(--inactive);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit</button>
+        <span style="font-size:11px; font-weight:800; padding:3px 10px; background:var(--blue); color:white; border-radius:12px;">NURSE</span>
+      </div>
+    </div>
+    <p style="font-size:20px; font-weight:700; color:var(--black); line-height:1.4; flex:1;">Does he have any allergies to medication?</p>
+  </div>
+
+  <div style="padding:12px 22px 14px; border-top:1.5px solid var(--separator); background:var(--white); box-shadow:0 -2px 10px rgba(0,0,0,0.05); display:flex; align-items:center; justify-content:space-between;">
+    <button style="display:flex; align-items:center; gap:7px; padding:10px 16px; border:1.5px solid var(--separator); border-radius:22px; background:var(--white); font-family:var(--font); cursor:pointer; flex-shrink:0;"><span style="font-size:15px;">🇺🇸</span><span style="font-size:13px; font-weight:800; color:var(--black);">EN</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--inactive)" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg><span style="font-size:13px; font-weight:700; color:var(--inactive);">ES</span><span style="font-size:15px;">🇲🇽</span></button>
+    <button onclick="show('res_7_1',document.querySelectorAll('.screen-nav button')[19])" style="width:54px; height:54px; border-radius:50%; background:var(--green); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 14px rgba(57,173,87,0.30); flex-shrink:0;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Home</span></button>
+    <button class="tab-btn active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg><span>Translate</span></button>
+    <button class="tab-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span>Cards</span></button>
+  </div>
+
+</div><!-- /res_7_2 -->
+</div><!-- /phone -->
+
+<div id="ann-res_7_2" class="ann" style="max-width:390px; width:100%; margin-top:16px; display:none;">
+  <div class="ann-title">7·2 · RESULT — NURSE JUST SPOKE</div>
+  <ul class="ann-list">
+    <li>Spanish translation now fills the large patient zone at 32px — readable from bedside distance</li>
+    <li>Nurse zone stays highlighted (JUST RECORDED) showing original at 20px + Edit button</li>
+    <li>Tap strip at the bottom of the Spanish zone: "Patient — tap here to respond"</li>
+    <li>Compact bar: green mic becomes the nurse's next-question trigger</li>
+    <li>The unequal size communicates "this side (translation) is more important right now"</li>
+  </ul>
+</div>
+
+<div class="phone" style="margin-top:40px;">
+<div id="res_7_3" class="screen" style="flex-direction:column; background:var(--white);">
+
+  <div class="status-bar"><span class="time">9:41</span>
+    <div style="display:flex;gap:5px;align-items:center;"><svg width="16" height="12" viewBox="0 0 16 12"><rect x="0" y="3" width="3" height="9" rx="1" fill="#1A1A1A"/><rect x="4.5" y="2" width="3" height="10" rx="1" fill="#1A1A1A"/><rect x="9" y="0" width="3" height="12" rx="1" fill="#1A1A1A"/><rect x="13.5" y="0" width="2.5" height="12" rx="1" fill="#E4E4E4"/></svg><svg width="16" height="12" viewBox="0 0 24 12"><rect x="0" y="3" width="21" height="9" rx="2" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><rect x="21.5" y="5" width="2" height="5" rx="1" fill="#1A1A1A"/><rect x="1.5" y="4.5" width="15" height="6" rx="1" fill="#1A1A1A"/></svg></div>
+  </div>
+
+  <div style="flex:1; display:flex; flex-direction:column; padding:14px 22px 12px; background:#FFF8E8; border-left:3px solid rgba(154,122,16,0.55); border-bottom:1px solid var(--separator);">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex-shrink:0;">
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span style="width:8px; height:8px; border-radius:50%; background:var(--amber); display:inline-block;"></span>
+        <span style="font-size:16px;">🇲🇽</span>
+        <span style="font-size:11px; font-weight:800; color:rgba(154,122,16,0.9); letter-spacing:0.07em;">SPANISH · RECORDING</span>
+      </div>
+      <span style="font-size:11px; font-weight:800; padding:3px 10px; background:rgba(154,122,16,0.15); color:rgba(100,80,0,0.8); border-radius:12px; letter-spacing:0.04em; border:1px solid rgba(154,122,16,0.2);">PATIENT</span>
+    </div>
+    <p style="font-size:20px; font-weight:700; color:var(--black); line-height:1.4; flex:1;">No, no tengo ninguna alergia.<span style="opacity:0.35; font-weight:400;">|</span></p>
+  </div>
+
+  <div style="height:0; position:relative; z-index:10; display:flex; align-items:center; justify-content:center;">
+    <div style="position:absolute; top:-20px; display:flex; align-items:center; gap:10px; background:var(--white); border:2px solid var(--separator); padding:7px 16px 7px 14px; border-radius:28px; box-shadow:0 2px 14px rgba(0,0,0,0.10);">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span style="font-size:12px; font-weight:700; color:var(--black);">28s left</span>
+      <button onclick="show('res_7_4',document.querySelectorAll('.screen-nav button')[22])" style="width:26px; height:26px; border-radius:50%; background:var(--red); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center;"><svg width="10" height="10" viewBox="0 0 24 24" fill="white"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></button>
+    </div>
+  </div>
+
+  <div style="flex:1.8; display:flex; flex-direction:column; padding:16px 22px 14px;">
+    <div style="display:flex; align-items:center; gap:7px; margin-bottom:14px;">
+      <span style="font-size:16px;">🇺🇸</span>
+      <span style="font-size:11px; font-weight:800; color:var(--inactive); letter-spacing:0.07em;">ENGLISH · TRANSLATION</span>
+    </div>
+    <p style="font-size:20px; font-weight:600; color:var(--separator);">Translating…</p>
+  </div>
+
+  <div style="padding:12px 22px 14px; border-top:1.5px solid var(--separator); background:var(--white); box-shadow:0 -2px 10px rgba(0,0,0,0.05); display:flex; align-items:center; justify-content:space-between;">
+    <button style="display:flex; align-items:center; gap:7px; padding:10px 16px; border:1.5px solid var(--separator); border-radius:22px; background:var(--white); font-family:var(--font); cursor:pointer; flex-shrink:0;"><span style="font-size:15px;">🇲🇽</span><span style="font-size:13px; font-weight:800; color:var(--black);">ES</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--inactive)" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg><span style="font-size:13px; font-weight:700; color:var(--inactive);">EN</span><span style="font-size:15px;">🇺🇸</span></button>
+    <button style="width:54px; height:54px; border-radius:50%; background:var(--amber); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 14px rgba(245,166,35,0.35); flex-shrink:0;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Home</span></button>
+    <button class="tab-btn active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg><span>Translate</span></button>
+    <button class="tab-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span>Cards</span></button>
+  </div>
+
+</div><!-- /res_7_3 -->
+</div><!-- /phone -->
+
+<div id="ann-res_7_3" class="ann" style="max-width:390px; width:100%; margin-top:16px; display:none;">
+  <div class="ann-title">7·3 · PATIENT RECORDING</div>
+  <ul class="ann-list">
+    <li>Zones invert: patient zone (top, flex:1) is now smaller and active — warm tint + amber border</li>
+    <li>Nurse zone (bottom, flex:1.8) is now larger, showing "Translating…" placeholder</li>
+    <li>Same pill mechanic as nurse recording — consistent pattern regardless of who speaks</li>
+    <li>Compact bar shows PATIENT / 🇲🇽 Spanish — nurse can see whose turn it is at a glance</li>
+  </ul>
+</div>
+
+<div class="phone" style="margin-top:40px;">
+<div id="res_7_4" class="screen" style="flex-direction:column; background:var(--white);">
+
+  <div class="status-bar"><span class="time">9:41</span>
+    <div style="display:flex;gap:5px;align-items:center;"><svg width="16" height="12" viewBox="0 0 16 12"><rect x="0" y="3" width="3" height="9" rx="1" fill="#1A1A1A"/><rect x="4.5" y="2" width="3" height="10" rx="1" fill="#1A1A1A"/><rect x="9" y="0" width="3" height="12" rx="1" fill="#1A1A1A"/><rect x="13.5" y="0" width="2.5" height="12" rx="1" fill="#E4E4E4"/></svg><svg width="16" height="12" viewBox="0 0 24 12"><rect x="0" y="3" width="21" height="9" rx="2" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><rect x="21.5" y="5" width="2" height="5" rx="1" fill="#1A1A1A"/><rect x="1.5" y="4.5" width="15" height="6" rx="1" fill="#1A1A1A"/></svg></div>
+  </div>
+
+  <div style="flex:1; display:flex; flex-direction:column; padding:14px 22px 12px; background:#FFF8E8; border-left:3px solid rgba(154,122,16,0.55); border-bottom:1px solid var(--separator);">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex-shrink:0;">
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span style="width:7px; height:7px; border-radius:50%; background:rgba(154,122,16,0.6); display:inline-block;"></span>
+        <span style="font-size:16px;">🇲🇽</span>
+        <span style="font-size:11px; font-weight:800; color:rgba(154,122,16,0.9); letter-spacing:0.07em;">SPANISH · JUST RECORDED</span>
+      </div>
+      <span style="font-size:11px; font-weight:800; padding:3px 10px; background:rgba(154,122,16,0.15); color:rgba(100,80,0,0.8); border-radius:12px; border:1px solid rgba(154,122,16,0.2);">PATIENT</span>
+    </div>
+    <p style="font-size:20px; font-weight:700; color:var(--black); line-height:1.4; flex:1;">No, no tengo ninguna alergia.</p>
+  </div>
+
+  <div style="flex:1.8; display:flex; flex-direction:column;">
+    <div style="padding:16px 22px 12px; display:flex; align-items:center; flex-shrink:0;">
+      <div style="display:flex; align-items:center; gap:7px;">
+        <span style="font-size:16px;">🇺🇸</span>
+        <span style="font-size:11px; font-weight:800; color:var(--inactive); letter-spacing:0.07em;">ENGLISH · TRANSLATION</span>
+      </div>
+    </div>
+    <div style="flex:1; padding:0 22px 12px;">
+      <p style="font-size:32px; font-weight:800; color:var(--black); line-height:1.25;">No, I don't have any allergies.</p>
+    </div>
+
+  </div>
+
+  <div style="padding:12px 22px 14px; border-top:1.5px solid var(--separator); background:var(--white); box-shadow:0 -2px 10px rgba(0,0,0,0.05); display:flex; align-items:center; justify-content:space-between;">
+    <button style="display:flex; align-items:center; gap:7px; padding:10px 16px; border:1.5px solid var(--separator); border-radius:22px; background:var(--white); font-family:var(--font); cursor:pointer; flex-shrink:0;"><span style="font-size:15px;">🇺🇸</span><span style="font-size:13px; font-weight:800; color:var(--black);">EN</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--inactive)" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg><span style="font-size:13px; font-weight:700; color:var(--inactive);">ES</span><span style="font-size:15px;">🇲🇽</span></button>
+    <button onclick="show('res_7_1',document.querySelectorAll('.screen-nav button')[19])" style="width:54px; height:54px; border-radius:50%; background:var(--green); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 14px rgba(57,173,87,0.30); flex-shrink:0;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Home</span></button>
+    <button class="tab-btn active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg><span>Translate</span></button>
+    <button class="tab-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span>Cards</span></button>
+  </div>
+
+</div><!-- /res_7_4 -->
+</div><!-- /phone -->
+
+<div id="ann-res_7_4" class="ann" style="max-width:390px; width:100%; margin-top:16px; display:none;">
+  <div class="ann-title">7·4 · DONE — PATIENT JUST SPOKE</div>
+  <ul class="ann-list">
+    <li>English translation fills the large nurse zone at 32px — nurse reads the patient's response</li>
+    <li>Patient zone stays warm-highlighted (JUST RECORDED) at 20px + Timer/Play for replay</li>
+    <li>Tap strip at bottom of English zone: "Nurse — tap here to ask next question" → loops to 7·1</li>
+    <li>The full loop: 7·0 Rest → 7·1 Nurse rec → 7·2 Result → 7·3 Patient rec → 7·4 Done → 7·1…</li>
+  </ul>
+</div>
+
+
+<div class="phone" style="margin-top:40px;">
+<div id="res_8_0" class="screen" style="flex-direction:column; background:var(--white);">
+
+  <div class="status-bar"><span class="time">9:41</span>
+    <div style="display:flex;gap:5px;align-items:center;"><svg width="16" height="12" viewBox="0 0 16 12"><rect x="0" y="3" width="3" height="9" rx="1" fill="#1A1A1A"/><rect x="4.5" y="2" width="3" height="10" rx="1" fill="#1A1A1A"/><rect x="9" y="0" width="3" height="12" rx="1" fill="#1A1A1A"/><rect x="13.5" y="0" width="2.5" height="12" rx="1" fill="#E4E4E4"/></svg><svg width="16" height="12" viewBox="0 0 24 12"><rect x="0" y="3" width="21" height="9" rx="2" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><rect x="21.5" y="5" width="2" height="5" rx="1" fill="#1A1A1A"/><rect x="1.5" y="4.5" width="15" height="6" rx="1" fill="#1A1A1A"/></svg></div>
+  </div>
+
+  <div style="flex:1.2; display:flex; flex-direction:column; padding:18px 22px 16px; border-bottom:1px solid var(--separator);">
+    <div style="display:flex; align-items:center; gap:7px; margin-bottom:16px;">
+      <span style="font-size:16px;">🇲🇽</span>
+      <span style="font-size:11px; font-weight:800; color:var(--inactive); letter-spacing:0.07em;">PATIENT · SPANISH</span>
+    </div>
+    <p style="font-size:18px; font-weight:600; color:var(--separator);">Translation will appear here</p>
+  </div>
+
+  <div style="flex:1; display:flex; flex-direction:column; padding:18px 22px 16px;">
+    <div style="display:flex; align-items:center; gap:7px; margin-bottom:16px;">
+      <span style="font-size:16px;">🇺🇸</span>
+      <span style="font-size:11px; font-weight:800; color:var(--inactive); letter-spacing:0.07em;">NURSE · ENGLISH</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; opacity:0.5;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--inactive)" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      <p style="font-size:14px; font-weight:600; color:var(--inactive); text-align:center;">Tap the mic below to start speaking</p>
+    </div>
+  </div>
+
+    <div style="padding:12px 22px 14px; border-top:1.5px solid var(--separator); background:var(--white); box-shadow:0 -2px 10px rgba(0,0,0,0.05); display:flex; align-items:center; justify-content:space-between;">
+    <button style="display:flex; align-items:center; gap:7px; padding:10px 16px; border:1.5px solid var(--separator); border-radius:22px; background:var(--white); font-family:var(--font); cursor:pointer; flex-shrink:0;"><span style="font-size:15px;">🇺🇸</span><span style="font-size:13px; font-weight:800; color:var(--black);">EN</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--inactive)" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg><span style="font-size:13px; font-weight:700; color:var(--inactive);">ES</span><span style="font-size:15px;">🇲🇽</span></button>
+    <button onclick="show('res_8_1',document.querySelectorAll('.screen-nav button')[24])" style="width:54px; height:54px; border-radius:50%; background:var(--green); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 14px rgba(57,173,87,0.30); flex-shrink:0;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Home</span></button>
+    <button class="tab-btn active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg><span>Translate</span></button>
+    <button class="tab-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span>Cards</span></button>
+  </div>
+
+</div><!-- /res_8_0 -->
+</div><!-- /phone -->
+
+<div class="phone" style="margin-top:40px;">
+<div id="res_8_1" class="screen" style="flex-direction:column; background:var(--white);">
+
+  <div class="status-bar"><span class="time">9:41</span>
+    <div style="display:flex;gap:5px;align-items:center;"><svg width="16" height="12" viewBox="0 0 16 12"><rect x="0" y="3" width="3" height="9" rx="1" fill="#1A1A1A"/><rect x="4.5" y="2" width="3" height="10" rx="1" fill="#1A1A1A"/><rect x="9" y="0" width="3" height="12" rx="1" fill="#1A1A1A"/><rect x="13.5" y="0" width="2.5" height="12" rx="1" fill="#E4E4E4"/></svg><svg width="16" height="12" viewBox="0 0 24 12"><rect x="0" y="3" width="21" height="9" rx="2" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><rect x="21.5" y="5" width="2" height="5" rx="1" fill="#1A1A1A"/><rect x="1.5" y="4.5" width="15" height="6" rx="1" fill="#1A1A1A"/></svg></div>
+  </div>
+
+  <div style="flex:1.8; display:flex; flex-direction:column; padding:16px 22px 14px; border-bottom:1px solid var(--separator);">
+    <div style="display:flex; align-items:center; gap:7px; margin-bottom:14px;">
+      <span style="font-size:16px;">🇲🇽</span>
+      <span style="font-size:11px; font-weight:800; color:var(--inactive); letter-spacing:0.07em;">SPANISH · TRANSLATION</span>
+    </div>
+    <p style="font-size:20px; font-weight:600; color:var(--separator);">Translating…</p>
+  </div>
+
+  <div style="height:0; position:relative; z-index:10; display:flex; align-items:center; justify-content:center;">
+    <div style="position:absolute; top:-20px; display:flex; align-items:center; gap:10px; background:var(--white); border:2px solid var(--separator); padding:7px 16px 7px 14px; border-radius:28px; box-shadow:0 2px 14px rgba(0,0,0,0.10);">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span style="font-size:12px; font-weight:700; color:var(--black);">28s left</span>
+      <button onclick="show('res_8_2',document.querySelectorAll('.screen-nav button')[25])" style="width:26px; height:26px; border-radius:50%; background:var(--red); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center;"><svg width="10" height="10" viewBox="0 0 24 24" fill="white"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></button>
+    </div>
+  </div>
+
+  <div style="flex:1; display:flex; flex-direction:column; padding:14px 22px 12px; background:var(--blue-light); border-left:3px solid var(--blue);">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex-shrink:0;">
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span style="width:8px; height:8px; border-radius:50%; background:var(--amber); display:inline-block;"></span>
+        <span style="font-size:16px;">🇺🇸</span>
+        <span style="font-size:11px; font-weight:800; color:var(--blue); letter-spacing:0.07em;">ENGLISH · RECORDING</span>
+      </div>
+      <span style="font-size:11px; font-weight:800; padding:3px 10px; background:var(--blue); color:white; border-radius:12px; letter-spacing:0.04em;">NURSE</span>
+    </div>
+    <p style="font-size:20px; font-weight:700; color:var(--black); line-height:1.4; flex:1;">Does he have any allergies to medication?<span style="opacity:0.35; font-weight:400;">|</span></p>
+  </div>
+
+    <div style="padding:12px 22px 14px; border-top:1.5px solid var(--separator); background:var(--white); box-shadow:0 -2px 10px rgba(0,0,0,0.05); display:flex; align-items:center; justify-content:space-between;">
+    <button style="display:flex; align-items:center; gap:7px; padding:10px 16px; border:1.5px solid var(--separator); border-radius:22px; background:var(--white); font-family:var(--font); cursor:pointer; flex-shrink:0;"><span style="font-size:15px;">🇺🇸</span><span style="font-size:13px; font-weight:800; color:var(--black);">EN</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--inactive)" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg><span style="font-size:13px; font-weight:700; color:var(--inactive);">ES</span><span style="font-size:15px;">🇲🇽</span></button>
+    <button style="width:54px; height:54px; border-radius:50%; background:var(--amber); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 14px rgba(245,166,35,0.35); flex-shrink:0;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Home</span></button>
+    <button class="tab-btn active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg><span>Translate</span></button>
+    <button class="tab-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span>Cards</span></button>
+  </div>
+
+</div><!-- /res_8_1 -->
+</div><!-- /phone -->
+
+<div id="ann-res_8_1" class="ann" style="max-width:390px; width:100%; margin-top:16px; display:none;">
+  <div class="ann-title">8·1 · NURSE RECORDING — UNEQUAL SWITCHING</div>
+  <ul class="ann-list">
+    <li>Active speaker zone is always at BOTTOM — nurse has natural sight line to their recording zone</li>
+    <li>Translation zone is at TOP — same position as 7-series for nurse states</li>
+    <li>Layout is identical to 7·1 here, since nurse is at the bottom in both concepts</li>
+    <li>The difference becomes visible in the patient states (8·3 / 8·4) where zones flip</li>
+  </ul>
+</div>
+
+<div class="phone" style="margin-top:40px;">
+<div id="res_8_2" class="screen" style="flex-direction:column; background:var(--white);">
+
+  <div class="status-bar"><span class="time">9:41</span>
+    <div style="display:flex;gap:5px;align-items:center;"><svg width="16" height="12" viewBox="0 0 16 12"><rect x="0" y="3" width="3" height="9" rx="1" fill="#1A1A1A"/><rect x="4.5" y="2" width="3" height="10" rx="1" fill="#1A1A1A"/><rect x="9" y="0" width="3" height="12" rx="1" fill="#1A1A1A"/><rect x="13.5" y="0" width="2.5" height="12" rx="1" fill="#E4E4E4"/></svg><svg width="16" height="12" viewBox="0 0 24 12"><rect x="0" y="3" width="21" height="9" rx="2" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><rect x="21.5" y="5" width="2" height="5" rx="1" fill="#1A1A1A"/><rect x="1.5" y="4.5" width="15" height="6" rx="1" fill="#1A1A1A"/></svg></div>
+  </div>
+
+  <div style="flex:1.8; display:flex; flex-direction:column; border-bottom:1px solid var(--separator);">
+    <div style="padding:16px 22px 12px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
+      <div style="display:flex; align-items:center; gap:7px;">
+        <span style="font-size:16px;">🇲🇽</span>
+        <span style="font-size:11px; font-weight:800; color:var(--inactive); letter-spacing:0.07em;">SPANISH · TRANSLATION</span>
+      </div>
+      <div style="display:flex; gap:6px;"><button style="border:1.5px solid var(--separator); border-radius:20px; padding:5px 12px; background:var(--white); font-family:var(--font); font-size:11px; font-weight:700; color:var(--inactive); cursor:pointer; display:flex; align-items:center; gap:4px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 1x</button><button style="border:1.5px solid var(--separator); border-radius:20px; padding:5px 12px; background:var(--white); font-family:var(--font); font-size:11px; font-weight:700; color:var(--black); cursor:pointer; display:flex; align-items:center; gap:4px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> Play</button></div>
+    </div>
+    <div style="flex:1; padding:0 22px 16px;">
+      <p style="font-size:32px; font-weight:800; color:var(--black); line-height:1.25;">¿Tiene alguna alergia a algún medicamento?</p>
+    </div>
+  </div>
+
+  <div style="flex:1; display:flex; flex-direction:column; padding:14px 22px 12px; background:var(--blue-light); border-left:3px solid var(--blue);">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex-shrink:0;">
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span style="width:7px; height:7px; border-radius:50%; background:var(--blue); display:inline-block;"></span>
+        <span style="font-size:16px;">🇺🇸</span>
+        <span style="font-size:11px; font-weight:800; color:var(--blue); letter-spacing:0.07em;">ENGLISH · JUST RECORDED</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <button style="display:flex; align-items:center; gap:4px; border:none; background:none; cursor:pointer; font-family:var(--font); font-size:12px; font-weight:700; color:var(--inactive);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit</button>
+        <span style="font-size:11px; font-weight:800; padding:3px 10px; background:var(--blue); color:white; border-radius:12px;">NURSE</span>
+      </div>
+    </div>
+    <p style="font-size:20px; font-weight:700; color:var(--black); line-height:1.4; flex:1;">Does he have any allergies to medication?</p>
+  </div>
+
+    <div style="padding:12px 22px 14px; border-top:1.5px solid var(--separator); background:var(--white); box-shadow:0 -2px 10px rgba(0,0,0,0.05); display:flex; align-items:center; justify-content:space-between;">
+    <button style="display:flex; align-items:center; gap:7px; padding:10px 16px; border:1.5px solid var(--separator); border-radius:22px; background:var(--white); font-family:var(--font); cursor:pointer; flex-shrink:0;"><span style="font-size:15px;">🇺🇸</span><span style="font-size:13px; font-weight:800; color:var(--black);">EN</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--inactive)" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg><span style="font-size:13px; font-weight:700; color:var(--inactive);">ES</span><span style="font-size:15px;">🇲🇽</span></button>
+    <button onclick="show('res_8_1',document.querySelectorAll('.screen-nav button')[24])" style="width:54px; height:54px; border-radius:50%; background:var(--green); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 14px rgba(57,173,87,0.30); flex-shrink:0;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Home</span></button>
+    <button class="tab-btn active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg><span>Translate</span></button>
+    <button class="tab-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span>Cards</span></button>
+  </div>
+
+</div><!-- /res_8_2 -->
+</div><!-- /phone -->
+
+<div id="ann-res_8_2" class="ann" style="max-width:390px; width:100%; margin-top:16px; display:none;">
+  <div class="ann-title">8·2 · RESULT — NURSE JUST SPOKE (UNEQUAL SWITCHING)</div>
+  <ul class="ann-list">
+    <li>Spanish translation fills top zone at 32px — nurse tilts phone to show patient</li>
+    <li>Nurse's English recording stays at bottom (JUST RECORDED) with Edit — nurse reviews what was captured</li>
+    <li>Play + 1x on Spanish zone: patient or nurse can replay the translation aloud</li>
+    <li>No Edit on Spanish — it's a translation, nurse edits the source English if needed</li>
+  </ul>
+</div>
+
+<div class="phone" style="margin-top:40px;">
+<div id="res_8_3" class="screen" style="flex-direction:column; background:var(--white);">
+
+  <div class="status-bar"><span class="time">9:41</span>
+    <div style="display:flex;gap:5px;align-items:center;"><svg width="16" height="12" viewBox="0 0 16 12"><rect x="0" y="3" width="3" height="9" rx="1" fill="#1A1A1A"/><rect x="4.5" y="2" width="3" height="10" rx="1" fill="#1A1A1A"/><rect x="9" y="0" width="3" height="12" rx="1" fill="#1A1A1A"/><rect x="13.5" y="0" width="2.5" height="12" rx="1" fill="#E4E4E4"/></svg><svg width="16" height="12" viewBox="0 0 24 12"><rect x="0" y="3" width="21" height="9" rx="2" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><rect x="21.5" y="5" width="2" height="5" rx="1" fill="#1A1A1A"/><rect x="1.5" y="4.5" width="15" height="6" rx="1" fill="#1A1A1A"/></svg></div>
+  </div>
+
+  <div style="flex:1.8; display:flex; flex-direction:column; padding:16px 22px 14px; border-bottom:1px solid var(--separator);">
+    <div style="display:flex; align-items:center; gap:7px; margin-bottom:14px;">
+      <span style="font-size:16px;">🇺🇸</span>
+      <span style="font-size:11px; font-weight:800; color:var(--inactive); letter-spacing:0.07em;">ENGLISH · TRANSLATION</span>
+    </div>
+    <p style="font-size:20px; font-weight:600; color:var(--separator);">Translating…</p>
+  </div>
+
+  <div style="height:0; position:relative; z-index:10; display:flex; align-items:center; justify-content:center;">
+    <div style="position:absolute; top:-20px; display:flex; align-items:center; gap:10px; background:var(--white); border:2px solid var(--separator); padding:7px 16px 7px 14px; border-radius:28px; box-shadow:0 2px 14px rgba(0,0,0,0.10);">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span style="font-size:12px; font-weight:700; color:var(--black);">28s left</span>
+      <button onclick="show('res_8_4',document.querySelectorAll('.screen-nav button')[27])" style="width:26px; height:26px; border-radius:50%; background:var(--red); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center;"><svg width="10" height="10" viewBox="0 0 24 24" fill="white"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></button>
+    </div>
+  </div>
+
+  <div style="flex:1; display:flex; flex-direction:column; padding:14px 22px 12px; background:#FFF8E8; border-left:3px solid rgba(154,122,16,0.55);">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex-shrink:0;">
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span style="width:8px; height:8px; border-radius:50%; background:var(--amber); display:inline-block;"></span>
+        <span style="font-size:16px;">🇲🇽</span>
+        <span style="font-size:11px; font-weight:800; color:rgba(154,122,16,0.9); letter-spacing:0.07em;">SPANISH · RECORDING</span>
+      </div>
+      <span style="font-size:11px; font-weight:800; padding:3px 10px; background:rgba(154,122,16,0.15); color:rgba(100,80,0,0.8); border-radius:12px; letter-spacing:0.04em; border:1px solid rgba(154,122,16,0.2);">PATIENT</span>
+    </div>
+    <p style="font-size:20px; font-weight:700; color:var(--black); line-height:1.4; flex:1;">No, no tengo ninguna alergia.<span style="opacity:0.35; font-weight:400;">|</span></p>
+  </div>
+
+    <div style="padding:12px 22px 14px; border-top:1.5px solid var(--separator); background:var(--white); box-shadow:0 -2px 10px rgba(0,0,0,0.05); display:flex; align-items:center; justify-content:space-between;">
+    <button style="display:flex; align-items:center; gap:7px; padding:10px 16px; border:1.5px solid var(--separator); border-radius:22px; background:var(--white); font-family:var(--font); cursor:pointer; flex-shrink:0;"><span style="font-size:15px;">🇲🇽</span><span style="font-size:13px; font-weight:800; color:var(--black);">ES</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--inactive)" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg><span style="font-size:13px; font-weight:700; color:var(--inactive);">EN</span><span style="font-size:15px;">🇺🇸</span></button>
+    <button style="width:54px; height:54px; border-radius:50%; background:var(--amber); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 14px rgba(245,166,35,0.35); flex-shrink:0;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Home</span></button>
+    <button class="tab-btn active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg><span>Translate</span></button>
+    <button class="tab-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span>Cards</span></button>
+  </div>
+
+</div><!-- /res_8_3 -->
+</div><!-- /phone -->
+
+<div id="ann-res_8_3" class="ann" style="max-width:390px; width:100%; margin-top:16px; display:none;">
+  <div class="ann-title">8·3 · PATIENT RECORDING — UNEQUAL SWITCHING</div>
+  <ul class="ann-list">
+    <li>ZONES FLIPPED vs 7·3 — patient zone moved to BOTTOM, nurse translation zone at TOP</li>
+    <li>Patient speaks from the bottom zone — natural for whoever is holding the phone</li>
+    <li>Nurse reads live English translation at top while patient records — better sight line</li>
+    <li>ES → EN toggle in bar confirms the active translation direction</li>
+    <li>Warm amber tint on patient zone matches the 7-series visual language for consistency</li>
+  </ul>
+</div>
+
+<div class="phone" style="margin-top:40px;">
+<div id="res_8_4" class="screen" style="flex-direction:column; background:var(--white);">
+
+  <div class="status-bar"><span class="time">9:41</span>
+    <div style="display:flex;gap:5px;align-items:center;"><svg width="16" height="12" viewBox="0 0 16 12"><rect x="0" y="3" width="3" height="9" rx="1" fill="#1A1A1A"/><rect x="4.5" y="2" width="3" height="10" rx="1" fill="#1A1A1A"/><rect x="9" y="0" width="3" height="12" rx="1" fill="#1A1A1A"/><rect x="13.5" y="0" width="2.5" height="12" rx="1" fill="#E4E4E4"/></svg><svg width="16" height="12" viewBox="0 0 24 12"><rect x="0" y="3" width="21" height="9" rx="2" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><rect x="21.5" y="5" width="2" height="5" rx="1" fill="#1A1A1A"/><rect x="1.5" y="4.5" width="15" height="6" rx="1" fill="#1A1A1A"/></svg></div>
+  </div>
+
+  <div style="flex:1.8; display:flex; flex-direction:column;">
+    <div style="padding:16px 22px 12px; display:flex; align-items:center; flex-shrink:0;">
+      <div style="display:flex; align-items:center; gap:7px;">
+        <span style="font-size:16px;">🇺🇸</span>
+        <span style="font-size:11px; font-weight:800; color:var(--inactive); letter-spacing:0.07em;">ENGLISH · TRANSLATION</span>
+      </div>
+    </div>
+    <div style="flex:1; padding:0 22px 16px;">
+      <p style="font-size:32px; font-weight:800; color:var(--black); line-height:1.25;">No, I don't have any allergies.</p>
+    </div>
+  </div>
+
+  <div style="flex:1; display:flex; flex-direction:column; padding:14px 22px 12px; background:#FFF8E8; border-left:3px solid rgba(154,122,16,0.55); border-top:1px solid var(--separator);">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex-shrink:0;">
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span style="width:7px; height:7px; border-radius:50%; background:rgba(154,122,16,0.6); display:inline-block;"></span>
+        <span style="font-size:16px;">🇲🇽</span>
+        <span style="font-size:11px; font-weight:800; color:rgba(154,122,16,0.9); letter-spacing:0.07em;">SPANISH · JUST RECORDED</span>
+      </div>
+      <span style="font-size:11px; font-weight:800; padding:3px 10px; background:rgba(154,122,16,0.15); color:rgba(100,80,0,0.8); border-radius:12px; border:1px solid rgba(154,122,16,0.2);">PATIENT</span>
+    </div>
+    <p style="font-size:20px; font-weight:700; color:var(--black); line-height:1.4; flex:1;">No, no tengo ninguna alergia.</p>
+  </div>
+
+    <div style="padding:12px 22px 14px; border-top:1.5px solid var(--separator); background:var(--white); box-shadow:0 -2px 10px rgba(0,0,0,0.05); display:flex; align-items:center; justify-content:space-between;">
+    <button style="display:flex; align-items:center; gap:7px; padding:10px 16px; border:1.5px solid var(--separator); border-radius:22px; background:var(--white); font-family:var(--font); cursor:pointer; flex-shrink:0;"><span style="font-size:15px;">🇺🇸</span><span style="font-size:13px; font-weight:800; color:var(--black);">EN</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--inactive)" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg><span style="font-size:13px; font-weight:700; color:var(--inactive);">ES</span><span style="font-size:15px;">🇲🇽</span></button>
+    <button onclick="show('res_8_1',document.querySelectorAll('.screen-nav button')[24])" style="width:54px; height:54px; border-radius:50%; background:var(--green); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 14px rgba(57,173,87,0.30); flex-shrink:0;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Home</span></button>
+    <button class="tab-btn active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg><span>Translate</span></button>
+    <button class="tab-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span>Cards</span></button>
+  </div>
+
+</div><!-- /res_8_4 -->
+</div><!-- /phone -->
+
+<div id="ann-res_8_4" class="ann" style="max-width:390px; width:100%; margin-top:16px; display:none;">
+  <div class="ann-title">8·4 · DONE — PATIENT JUST SPOKE (UNEQUAL SWITCHING)</div>
+  <ul class="ann-list">
+    <li>ZONES FLIPPED vs 7·4 — English translation is at TOP (large), patient recording at BOTTOM (small)</li>
+    <li>Nurse reads the 32px English translation naturally at the top — no tilting needed</li>
+    <li>Patient zone at bottom is calm (JUST RECORDED), no play/timer — patient doesn't need replay</li>
+    <li>No Edit on the English translation — it's machine-generated from patient speech</li>
+    <li>Green mic + EN→ES bar: nurse's turn again — full loop restarts</li>
+  </ul>
+</div>
+
+</body>
+</html>

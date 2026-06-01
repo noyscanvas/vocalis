@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vocalis — Full Journey Map</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: #0f172a;
+      color: #1e293b;
+      min-height: 100vh;
+      padding: 28px 28px 60px;
+    }
+
+    /* ── Page header ── */
+    .page-header {
+      margin-bottom: 20px;
+    }
+    .page-header h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #f1f5f9;
+      letter-spacing: -0.3px;
+      margin-bottom: 4px;
+    }
+    .page-header p {
+      font-size: 12.5px;
+      color: #94a3b8;
+    }
+
+    /* ── Legend ── */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 20px;
+      margin-bottom: 20px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 11.5px;
+      color: #cbd5e1;
+    }
+    .legend-swatch {
+      width: 13px; height: 13px; border-radius: 3px; flex-shrink: 0;
+    }
+
+    /* ── Flow key ── */
+    .flow-key {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 22px;
+      flex-wrap: wrap;
+    }
+    .flow-chip {
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #fff;
+      text-transform: uppercase;
+    }
+    .f1 { background: #6d28d9; }
+    .f2 { background: #15803d; }
+    .f3 { background: #1d4ed8; }
+    .f4 { background: #b91c1c; }
+
+    /* ── Scroll wrapper ── */
+    .scroll-wrap {
+      overflow-x: auto;
+      border-radius: 14px;
+      box-shadow: 0 4px 32px rgba(0,0,0,0.5);
+      position: relative;
+    }
+
+    /* ── Main table ── */
+    table {
+      border-collapse: collapse;
+      font-size: 11.5px;
+      line-height: 1.45;
+    }
+
+    /* Cells */
+    th, td { vertical-align: top; }
+
+    /* ── Lane label (left sticky col) ── */
+    .ll {
+      position: sticky;
+      left: 0;
+      z-index: 20;
+      width: 148px;
+      min-width: 148px;
+      padding: 10px 12px;
+      text-align: right;
+      font-weight: 700;
+      font-size: 10.5px;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      color: #fff;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .ll .icon { display: block; font-size: 17px; margin-bottom: 3px; text-align: right; }
+    .ll-corner { background: #0f172a; border-bottom: 2px solid #334155 !important; }
+    .ll-screen   { background: #334155; }
+    .ll-action   { background: #713f12; }
+    .ll-thought  { background: #6b21a8; }
+    .ll-patient  { background: #1e40af; }
+    .ll-pain     { background: #991b1b; }
+    .ll-data     { background: #065f46; }
+
+    /* ── Flow-header row ── */
+    .fh {
+      padding: 9px 14px;
+      font-size: 10.5px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #fff;
+      text-align: center;
+      border-right: 3px solid rgba(255,255,255,0.2);
+    }
+    .fh-1 { background: #5b21b6; }
+    .fh-2 { background: #15803d; }
+    .fh-3 { background: #1d4ed8; }
+    .fh-4 { background: #b91c1c; }
+    .fh-err { background: #7c2d12; }
+
+    /* ── Step-name row ── */
+    .sh {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 8px 10px;
+      font-size: 10.5px;
+      font-weight: 600;
+      text-align: center;
+      border-right: 1px solid #334155;
+      border-bottom: 2px solid #0f172a;
+      width: 205px;
+      min-width: 205px;
+    }
+    .sh .tag {
+      display: inline-block;
+      background: rgba(255,255,255,0.1);
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-size: 9px;
+      margin-bottom: 3px;
+      letter-spacing: 0.5px;
+    }
+    .sh .label { display: block; }
+
+    /* ── Content cells ── */
+    .c {
+      padding: 8px 10px;
+      border-right: 1px solid rgba(0,0,0,0.06);
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+      width: 205px;
+      min-width: 205px;
+    }
+    .c.na { color: #9ca3af; font-style: italic; }
+
+    /* Lane background colours */
+    .row-screen  .c { background: #f1f5f9; color: #1e293b; }
+    .row-action  .c { background: #fefce8; color: #713f12; }
+    .row-thought .c { background: #faf5ff; color: #4c1d95; }
+    .row-patient .c { background: #eff6ff; color: #1e3a8a; }
+    .row-pain    .c { background: #fff7ed; color: #7c2d12; }
+    .row-data    .c { background: #f0fdf4; color: #6b7280; font-style: italic; }
+
+    /* Error column tint */
+    .row-screen  .c.err { background: #fef2f2; }
+    .row-action  .c.err { background: #fff7ed; }
+    .row-thought .c.err { background: #fff7ed; }
+    .row-patient .c.err { background: #fef2f2; }
+    .row-pain    .c.err { background: #fef2f2; color: #991b1b; }
+
+    /* Flow gap column */
+    .gap { width: 12px; min-width: 12px; background: #0f172a; }
+
+    /* ── Emoji prefix ── */
+    .em { margin-right: 2px; }
+
+    /* ── Scrollbar ── */
+    .scroll-wrap::-webkit-scrollbar { height: 8px; }
+    .scroll-wrap::-webkit-scrollbar-track { background: #1e293b; border-radius: 4px; }
+    .scroll-wrap::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Vocalis — Full App Journey Map</h1>
+  <p>All existing flows across 4 features · 25 steps · Data/Metrics column reserved for next pass</p>
+</div>
+
+<div class="flow-key">
+  <span class="flow-chip f1">Flow 1 · Onboarding</span>
+  <span class="flow-chip f2">Flow 2 · Quick Phrases</span>
+  <span class="flow-chip f3">Flow 3 · Flashcards</span>
+  <span class="flow-chip f4">Flow 4 · Live Translate</span>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-swatch" style="background:#f1f5f9;border:1px solid #cbd5e1"></div> Screen / Step</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#fefce8;border:1px solid #fde68a"></div> Nurse Action</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#faf5ff;border:1px solid #ddd6fe"></div> Nurse Thought</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#eff6ff;border:1px solid #bfdbfe"></div> Patient Experience</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#fff7ed;border:1px solid #fed7aa"></div> Pain Points</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#f0fdf4;border:1px solid #bbf7d0"></div> Data / Metrics (TBD)</div>
+</div>
+
+<div class="scroll-wrap">
+<table>
+
+<!-- ══════════════════════════════════════════════
+     ROW 0 — Flow header banners
+══════════════════════════════════════════════ -->
+<tr>
+  <td class="ll ll-corner"></td>
+  <!-- Flow 1: 5 steps -->
+  <th class="fh fh-1" colspan="5">🚀 Flow 1 — Onboarding</th>
+  <td class="gap"></td>
+  <!-- Flow 2: 8 steps -->
+  <th class="fh fh-2" colspan="8">💬 Flow 2 — Quick Phrases (Home Tab)</th>
+  <td class="gap"></td>
+  <!-- Flow 3: 4 steps -->
+  <th class="fh fh-3" colspan="4">🗂 Flow 3 — Flashcards</th>
+  <td class="gap"></td>
+  <!-- Flow 4: 6 steps + 2 errors -->
+  <th class="fh fh-4" colspan="6">🎙 Flow 4 — Live Translate</th>
+  <th class="fh fh-err" colspan="2">⛔ Errors</th>
+</tr>
+
+<!-- ══════════════════════════════════════════════
+     ROW 1 — Step names
+══════════════════════════════════════════════ -->
+<tr>
+  <td class="ll ll-corner">Step</td>
+  <!-- Flow 1 -->
+  <th class="sh"><span class="tag">F1·S1</span><span class="label">PWA Install Prompt</span></th>
+  <th class="sh"><span class="tag">F1·S2</span><span class="label">Language Tutorial</span></th>
+  <th class="sh"><span class="tag">F1·S3</span><span class="label">Phrase Tutorial</span></th>
+  <th class="sh"><span class="tag">F1·S4</span><span class="label">Color Coding Tip</span></th>
+  <th class="sh"><span class="tag">F1·S5</span><span class="label">Onboarding Done</span></th>
+  <td class="gap"></td>
+  <!-- Flow 2 -->
+  <th class="sh"><span class="tag">F2·1</span><span class="label">Home Screen</span></th>
+  <th class="sh"><span class="tag">F2·2</span><span class="label">Tap Phrase</span></th>
+  <th class="sh"><span class="tag">F2·3</span><span class="label">Toggle Back</span></th>
+  <th class="sh"><span class="tag">F2·4</span><span class="label">All Phrases</span></th>
+  <th class="sh"><span class="tag">F2·5</span><span class="label">Add / Remove</span></th>
+  <th class="sh"><span class="tag">F2·6</span><span class="label">Change Language</span></th>
+  <th class="sh"><span class="tag">F2·7</span><span class="label">Feedback</span></th>
+  <th class="sh"><span class="tag">F2·8</span><span class="label">Notifications</span></th>
+  <td class="gap"></td>
+  <!-- Flow 3 -->
+  <th class="sh"><span class="tag">F3·1</span><span class="label">Card Grid</span></th>
+  <th class="sh"><span class="tag">F3·2</span><span class="label">Card Detail</span></th>
+  <th class="sh"><span class="tag">F3·3</span><span class="label">Audio Controls</span></th>
+  <th class="sh"><span class="tag">F3·4</span><span class="label">Understand?</span></th>
+  <td class="gap"></td>
+  <!-- Flow 4 -->
+  <th class="sh"><span class="tag">F4·1</span><span class="label">Translate Ready</span></th>
+  <th class="sh"><span class="tag">F4·2</span><span class="label">Nurse Recording</span></th>
+  <th class="sh"><span class="tag">F4·3</span><span class="label">Nurse Result</span></th>
+  <th class="sh"><span class="tag">F4·4</span><span class="label">Patient Turn</span></th>
+  <th class="sh"><span class="tag">F4·5</span><span class="label">Patient Recording</span></th>
+  <th class="sh"><span class="tag">F4·6</span><span class="label">Patient Result</span></th>
+  <th class="sh"><span class="tag">ERR·1</span><span class="label">Timeout</span></th>
+  <th class="sh"><span class="tag">ERR·2</span><span class="label">No Speech</span></th>
+</tr>
+
+<!-- ══════════════════════════════════════════════
+     ROW 2 — Screen / Step
+══════════════════════════════════════════════ -->
+<tr class="row-screen">
+  <td class="ll ll-screen"><span class="icon">🖥</span>Screen</td>
+  <td class="c">Home + "Add Quick Phrases to your home screen!" modal</td>
+  <td class="c">Language pill highlighted with tooltip overlay</td>
+  <td class="c">Phrase "Let me call an interpreter." highlighted green, audio tip</td>
+  <td class="c">"Quick Tip: Blue = Questions / Green = Statements" modal</td>
+  <td class="c">Clean home screen, 6 phrase cards, no modals</td>
+  <td class="gap"></td>
+  <td class="c">6 default cards (green = statements, blue = questions), language pill</td>
+  <td class="c">Tapped card now shows inline Spanish translation</td>
+  <td class="c">Card reverts back to English text</td>
+  <td class="c">"All Phrases" screen with search bar + full list, +/− toggles</td>
+  <td class="c">Same screen, phrase added or removed from home</td>
+  <td class="c">Flag picker modal: 🇫🇷 🇰🇷 🇵🇹 🇪🇸 🇻🇳 → Select</td>
+  <td class="c">"All opinions welcome!" text input modal + Submit</td>
+  <td class="c">iOS system notification permission prompt</td>
+  <td class="gap"></td>
+  <td class="c">Grid of illustrated cards, filter tabs: All / Nursing Tasks / Vital Signs / Questions</td>
+  <td class="c">Full card: illustration + translated phrase + English subtitle</td>
+  <td class="c">Same card: Replay translation → Mute → Play button cycle</td>
+  <td class="c">Same card: "Understand?" → "¿Me ha entendido?"</td>
+  <td class="gap"></td>
+  <td class="c">EN→ES, "Enhanced with AI ✨" toggle (off), blue mic ready</td>
+  <td class="c">"Speak now…", live transcription appearing, 10s limit, red stop button</td>
+  <td class="c">EN original (white bubble) + ES translation (blue bubble), speaker icon</td>
+  <td class="c">Direction flips ES←EN, mic ready for patient</td>
+  <td class="c">"Hable ahora…", live transcription, 10s limit, red stop button</td>
+  <td class="c">ES original (white bubble) + EN translation (blue bubble)</td>
+  <td class="c err">Red icon: "Time's up, please avoid long phrases."</td>
+  <td class="c err">Orange text: "No speech detected, or the wrong language was spoken."</td>
+</tr>
+
+<!-- ══════════════════════════════════════════════
+     ROW 3 — Nurse Action
+══════════════════════════════════════════════ -->
+<tr class="row-action">
+  <td class="ll ll-action"><span class="icon">👩‍⚕️</span>Nurse Action</td>
+  <td class="c">Taps "Okay" on install prompt</td>
+  <td class="c">Taps "Next" on language tooltip</td>
+  <td class="c">Taps "Okay" on phrase tutorial</td>
+  <td class="c">Taps "Okay" on color tip</td>
+  <td class="c">Browses 6 default phrase cards</td>
+  <td class="gap"></td>
+  <td class="c">Scans 6 visible cards for the right phrase</td>
+  <td class="c">Taps phrase card → hears Spanish audio play</td>
+  <td class="c">Taps same card again → reverts to English</td>
+  <td class="c">Taps unlabelled pencil FAB → opens All Phrases</td>
+  <td class="c">Taps + to add / − to remove from home</td>
+  <td class="c">Taps language pill → selects flag → taps Select</td>
+  <td class="c">Taps thumbs-up icon → types feedback → Submit</td>
+  <td class="c">Taps Allow or Don't Allow</td>
+  <td class="gap"></td>
+  <td class="c">Taps Flashcards tab → filters category → taps card</td>
+  <td class="c">Views illustration + reads translated phrase, shows phone to patient</td>
+  <td class="c">Taps Replay / Mute / Play as needed</td>
+  <td class="c">Taps "Understand?" → shows translated question to patient</td>
+  <td class="gap"></td>
+  <td class="c">Taps Translate tab → confirms EN→ES → taps mic</td>
+  <td class="c">Speaks (max 10s) → auto-stops or taps stop</td>
+  <td class="c">Reads translation → shows phone screen to patient</td>
+  <td class="c">Switches direction to ES←EN, hands phone to patient</td>
+  <td class="c">Waits while patient speaks into phone</td>
+  <td class="c">Reads English translation of patient's response</td>
+  <td class="c err">Sees error → shortens phrase → taps mic to retry</td>
+  <td class="c err">Sees error → checks language direction → retries</td>
+</tr>
+
+<!-- ══════════════════════════════════════════════
+     ROW 4 — Nurse Thought
+══════════════════════════════════════════════ -->
+<tr class="row-thought">
+  <td class="ll ll-thought"><span class="icon">💭</span>Nurse Thought</td>
+  <td class="c">"What is this? First time seeing the app."</td>
+  <td class="c">"Got it — I can pick the patient's language up top."</td>
+  <td class="c">"Tap to hear it, tap again to toggle back."</td>
+  <td class="c">"Blue = questions, green = statements."</td>
+  <td class="c">"Ready to use — where's the phrase I need?"</td>
+  <td class="gap"></td>
+  <td class="c">"Is the phrase I need one of these 6? Hard to know."</td>
+  <td class="c">"Patient needs to hear this in their language."</td>
+  <td class="c">"Need a different phrase now."</td>
+  <td class="c">"The phrase I need isn't on the home screen."</td>
+  <td class="c">"I want my most-used phrases accessible fast."</td>
+  <td class="c">"Patient speaks Vietnamese, not Spanish."</td>
+  <td class="c">"The app could work better for my cases."</td>
+  <td class="c">"Why does a translation app need notifications?"</td>
+  <td class="gap"></td>
+  <td class="c">"I need to explain what I'm about to do to the patient."</td>
+  <td class="c">"Show the patient the picture so they understand."</td>
+  <td class="c">"Did the patient hear it? Should I replay?"</td>
+  <td class="c">"Did the patient actually understand me?"</td>
+  <td class="gap"></td>
+  <td class="c">"I need real-time translation for a longer conversation."</td>
+  <td class="c">"Stay under 10 seconds — don't go over."</td>
+  <td class="c">"Did that translate correctly? Does it sound natural?"</td>
+  <td class="c">"Now the patient can respond."</td>
+  <td class="c">"Waiting for the patient to speak."</td>
+  <td class="c">"What did the patient say?"</td>
+  <td class="c err">"I spoke too long — need to break it into shorter pieces."</td>
+  <td class="c err">"Why didn't it hear me? Wrong language direction?"</td>
+</tr>
+
+<!-- ══════════════════════════════════════════════
+     ROW 5 — Patient Experience
+══════════════════════════════════════════════ -->
+<tr class="row-patient">
+  <td class="ll ll-patient"><span class="icon">🧑‍🤝‍🧑</span>Patient Exp.</td>
+  <td class="c na">— not present</td>
+  <td class="c na">— not present</td>
+  <td class="c na">— not present</td>
+  <td class="c na">— not present</td>
+  <td class="c na">— not present</td>
+  <td class="gap"></td>
+  <td class="c na">— waiting</td>
+  <td class="c">Hears Spanish translation play aloud from the phone speaker</td>
+  <td class="c na">— nurse managing device</td>
+  <td class="c na">— nurse managing device</td>
+  <td class="c na">— nurse managing device</td>
+  <td class="c na">— nurse managing device</td>
+  <td class="c na">— nurse managing device</td>
+  <td class="c na">— nurse managing device</td>
+  <td class="gap"></td>
+  <td class="c na">— nurse navigating</td>
+  <td class="c">Sees illustration + hears translated phrase auto-play aloud</td>
+  <td class="c">Hears audio replay or waits in silence</td>
+  <td class="c">Sees "¿Me ha entendido?" in their language — nods or responds verbally</td>
+  <td class="gap"></td>
+  <td class="c na">— waiting for nurse to set up</td>
+  <td class="c">Hears nurse speak English, waits — doesn't know what's happening yet</td>
+  <td class="c">Hears Spanish translation auto-play from the phone</td>
+  <td class="c">Given the phone by the nurse</td>
+  <td class="c">Speaks Spanish into the phone</td>
+  <td class="c">Waits while nurse reads their translated response</td>
+  <td class="c err">Confused — nurse is silent. Error screen shown in English only.</td>
+  <td class="c err">Confused — nurse is struggling with the phone, interaction stalled.</td>
+</tr>
+
+<!-- ══════════════════════════════════════════════
+     ROW 6 — Pain Points
+══════════════════════════════════════════════ -->
+<tr class="row-pain">
+  <td class="ll ll-pain"><span class="icon">⚠️</span>Pain Points</td>
+  <td class="c">Nurse may tap Okay without reading — no enforcement</td>
+  <td class="c">Doesn't preview which 5 languages are available</td>
+  <td class="c">Volume warning is easy to miss → silent failure if volume is off</td>
+  <td class="c">Color-only distinction fails for colorblind users; no shape difference</td>
+  <td class="c">No way to re-access onboarding if nurse forgets the steps</td>
+  <td class="gap"></td>
+  <td class="c">Only 6 phrases visible — no scroll hint; more hidden behind unlabelled FAB</td>
+  <td class="c">No visual confirmation audio played; silent failure if volume is off</td>
+  <td class="c">—</td>
+  <td class="c">Pencil FAB has no label — discoverability is very low</td>
+  <td class="c">Can't reorder phrases on home screen</td>
+  <td class="c">Only 5 languages — no way to add others</td>
+  <td class="c">Feedback trigger (thumbs-up icon) not obvious — rarely found</td>
+  <td class="c">Unclear why notifications needed — likely dismissed</td>
+  <td class="gap"></td>
+  <td class="c">No search in card grid — must browse visually</td>
+  <td class="c">Auto-play can be startling or too loud in a quiet hospital room</td>
+  <td class="c">No way to confirm patient heard it clearly</td>
+  <td class="c">"Understand?" has no digital response path — verbal only, nothing logged</td>
+  <td class="gap"></td>
+  <td class="c">"Enhanced with AI" toggle unexplained — nurses don't know what it changes</td>
+  <td class="c">10s limit forces unnatural speech breaks mid-sentence</td>
+  <td class="c">No way to flag a bad translation; auto-play can't be undone</td>
+  <td class="c">Direction switch not intuitive — easy to translate the wrong way</td>
+  <td class="c">Patient unfamiliar with app — may not know to tap the mic</td>
+  <td class="c">No confirmation loop — nurse must re-ask if translation unclear</td>
+  <td class="c err">Error message in English only — patient has no context for what went wrong</td>
+  <td class="c err">Error in English only; no troubleshooting guidance for nurse or patient</td>
+</tr>
+
+<!-- ══════════════════════════════════════════════
+     ROW 7 — Data / Metrics (placeholder)
+══════════════════════════════════════════════ -->
+<tr class="row-data">
+  <td class="ll ll-data"><span class="icon">📊</span>Data / Metrics</td>
+  <td class="c">TBD</td>
+  <td class="c">TBD</td>
+  <td class="c">TBD</td>
+  <td class="c">TBD</td>
+  <td class="c">TBD</td>
+  <td class="gap"></td>
+  <td class="c">TBD</td>
+  <td class="c">TBD</td>
+  <td class="c">TBD</td>
+  <td class="c">TBD</td>
+  <td class="c">TBD</td>
+  <td class="c">TBD</td>
+  <td class="c">TBD</td>
+  <td class="c">TBD</td>
+  <td class="gap"></td>
+  <td class="c">TBD</td>
+  <td class="c">TBD</td>
+  <td class="c">TBD</td>
+  <td class="c">TBD</td>
+  <td class="gap"></td>
+  <td class="c">TBD</td>
+  <td class="c">TBD</td>
+  <td class="c">TBD</td>
+  <td class="c">TBD</td>
+  <td class="c">TBD</td>
+  <td class="c">TBD</td>
+  <td class="c">TBD</td>
+  <td class="c">TBD</td>
+</tr>
+
+</table>
+</div>
+
+</body>
+</html>
