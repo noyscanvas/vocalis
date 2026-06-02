@@ -167,13 +167,17 @@
     }
     .hint.hidden { display: none; }
 
-    /* Playback row */
+    /* Playback row — sits at zone bottom, left of the FAB */
     .playback-row {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      right: 96px; /* leaves room for 62px FAB + padding */
       display: flex; gap: 8px;
-      margin-top: 10px;
-      flex-shrink: 0;
+      align-items: center;
+      flex-wrap: nowrap;
     }
-    .playback-row.hidden { display: none; }
+    .playback-row.hidden { display: none !important; }
 
     /* Shared pill-shaped button (+10% touch target) */
     .pill-btn {
