@@ -49,6 +49,19 @@
       display: flex; align-items: center; gap: 8px;
       font-size: 14px; color: #333; font-weight: 500;
     }
+    /* Zone expand button (lives inside patient zone header) */
+    .zone-expand-btn {
+      background: none; border: none; cursor: pointer;
+      padding: 6px; color: #999; line-height: 0;
+      border-radius: 8px;
+      flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .zone-expand-btn:active { background: rgba(0,0,0,0.06); }
+    /* Wrapper for right-side header actions */
+    .zone-header-right {
+      display: flex; align-items: center; gap: 6px;
+    }
     .toggle-track {
       width: 44px; height: 26px;
       background: #D1D1D6; border-radius: 13px;
@@ -84,15 +97,20 @@
 
     /* ── Zones ────────────────────────────────────── */
     .zone {
-      flex: 1;
       display: flex;
       flex-direction: column;
-      padding: 14px 20px 76px; /* 76px bottom padding for FAB clearance */
+      padding: 14px 20px 82px; /* 82px bottom for larger FAB */
       position: relative;
-      transition: background-color 0.25s ease;
+      transition: background-color 0.25s ease, flex 0.35s cubic-bezier(0.4,0,0.2,1);
       min-height: 0;
       overflow: hidden;
     }
+    /* Default split: patient 1/4, nurse 3/4 */
+    #patientZone { flex: 1; }
+    #nurseZone   { flex: 3; }
+    /* Expanded: patient 2/3, nurse 1/3 */
+    .main.patient-expanded #patientZone { flex: 2; }
+    .main.patient-expanded #nurseZone   { flex: 1; }
     .zone.nurse-active   { background: #F8E8F3; }
     .zone.patient-active { background: #EFF1DC; }
 
@@ -157,25 +175,25 @@
     }
     .playback-row.hidden { display: none; }
 
-    /* Shared pill-shaped button */
+    /* Shared pill-shaped button (+10% touch target) */
     .pill-btn {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 8px 15px; border-radius: 22px;
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 10px 17px; border-radius: 24px;
       background: white; border: 1.5px solid #E0E0E0;
-      font-size: 13px; color: #555; font-weight: 500;
+      font-size: 14px; color: #555; font-weight: 500;
       cursor: pointer; white-space: nowrap;
-      flex-shrink: 0;
+      flex-shrink: 0; min-height: 44px;
     }
     .pill-btn:active { background: #F2F2F2; }
 
-    /* Edit button (same shape as pill-btn) */
+    /* Edit button (+10% touch target) */
     .edit-btn {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 7px 14px; border-radius: 22px;
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 9px 16px; border-radius: 24px;
       background: white; border: 1.5px solid #E0E0E0;
-      font-size: 13px; color: #555; font-weight: 500;
+      font-size: 14px; color: #555; font-weight: 500;
       cursor: pointer; white-space: nowrap;
-      flex-shrink: 0;
+      flex-shrink: 0; min-height: 44px;
     }
     .edit-btn.hidden   { display: none !important; }
 
@@ -186,20 +204,20 @@
     .cancel-btn {
       background: none; border: none;
       font-size: 15px; color: #555; cursor: pointer;
-      padding: 6px 4px; font-weight: 400;
+      padding: 10px 8px; font-weight: 400; min-height: 44px;
     }
     .done-btn {
       background: #29C6E0; border: none;
-      border-radius: 22px; padding: 7px 20px;
+      border-radius: 24px; padding: 10px 22px;
       font-size: 15px; font-weight: 600;
-      color: white; cursor: pointer;
+      color: white; cursor: pointer; min-height: 44px;
     }
 
-    /* ── FABs ─────────────────────────────────────── */
+    /* ── FABs (+10% → 62px) ──────────────────────── */
     .mic-fab, .stop-fab {
       position: absolute;
-      bottom: 20px; right: 20px;
-      width: 56px; height: 56px;
+      bottom: 20px; right: 18px;
+      width: 62px; height: 62px;
       border-radius: 50%;
       border: none; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
@@ -207,7 +225,7 @@
     }
     .mic-fab {
       background: #29C6E0;
-      box-shadow: 0 4px 14px rgba(41, 198, 224, 0.45);
+      box-shadow: 0 4px 16px rgba(41, 198, 224, 0.45);
       transition: transform 0.12s;
     }
     .mic-fab:active  { transform: scale(0.91); }
@@ -215,15 +233,15 @@
 
     .stop-fab {
       background: #E53935;
-      box-shadow: 0 4px 14px rgba(229, 57, 53, 0.4);
+      box-shadow: 0 4px 16px rgba(229, 57, 53, 0.4);
       animation: pulse-ring 1.6s infinite;
     }
     .stop-fab.hidden { display: none !important; }
 
     @keyframes pulse-ring {
-      0%   { box-shadow: 0 4px 14px rgba(229,57,53,0.4), 0 0 0 0 rgba(229,57,53,0.35); }
-      60%  { box-shadow: 0 4px 14px rgba(229,57,53,0.4), 0 0 0 14px rgba(229,57,53,0); }
-      100% { box-shadow: 0 4px 14px rgba(229,57,53,0.4), 0 0 0 0 rgba(229,57,53,0); }
+      0%   { box-shadow: 0 4px 16px rgba(229,57,53,0.4), 0 0 0 0 rgba(229,57,53,0.35); }
+      60%  { box-shadow: 0 4px 16px rgba(229,57,53,0.4), 0 0 0 16px rgba(229,57,53,0); }
+      100% { box-shadow: 0 4px 16px rgba(229,57,53,0.4), 0 0 0 0 rgba(229,57,53,0); }
     }
 
     /* ── Divider ──────────────────────────────────── */
@@ -318,7 +336,7 @@
   </div>
 </div>
 
-<!-- App Controls -->
+<!-- App Controls (AI mode toggle only) -->
 <div class="app-controls" id="appControls">
   <div class="ai-toggle-row">
     <div class="toggle-track" id="aiToggle" onclick="this.classList.toggle('on')">
@@ -326,37 +344,41 @@
     </div>
     <span>AI Mode</span>
   </div>
-  <button class="expand-btn" onclick="toggleExpand()" title="Fullscreen">
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <path d="M12.5 2.5H17.5V7.5" stroke="#333" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M7.5 17.5H2.5V12.5" stroke="#333" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M17.5 2.5L11.5 8.5" stroke="#333" stroke-width="1.8" stroke-linecap="round"/>
-      <path d="M2.5 17.5L8.5 11.5" stroke="#333" stroke-width="1.8" stroke-linecap="round"/>
-    </svg>
-  </button>
 </div>
 
 <!-- Main -->
 <div class="main">
 
-  <!-- ── Patient Zone (top) ── -->
+  <!-- ── Patient Zone (top, default 1/4) ── -->
   <div class="zone" id="patientZone" onclick="onZoneClick('patient')">
     <div class="accent-bar"></div>
     <div class="zone-header">
       <div class="zone-label">PATIENT &nbsp;·&nbsp; 🇺🇸 &nbsp;SPANISH</div>
 
-      <button class="edit-btn hidden" id="patientEditBtn"
-              onclick="startEdit('patient', event)">
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-          <path d="M8.5 1L11 3.5 3.5 11H1V8.5L8.5 1z"
-                stroke="#555" stroke-width="1.3" stroke-linejoin="round" fill="none"/>
-        </svg>
-        Edit
-      </button>
+      <div class="zone-header-right">
+        <!-- Expand toggle — always visible in patient header -->
+        <button class="zone-expand-btn" id="patientExpandBtn"
+                onclick="togglePatientSize(event)" title="Expand patient area">
+          <!-- expand icon (default: small zone → suggest expanding) -->
+          <svg id="expandIcon" width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M11 2h5v5M7 16H2v-5M16 2l-5.5 5.5M2 16l5.5-5.5"
+                  stroke="#999" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
 
-      <div class="edit-actions hidden" id="patientEditActions">
-        <button class="cancel-btn" onclick="cancelEdit('patient', event)">Cancel</button>
-        <button class="done-btn"   onclick="doneEdit('patient',  event)">Done</button>
+        <button class="edit-btn hidden" id="patientEditBtn"
+                onclick="startEdit('patient', event)">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M8.5 1L11 3.5 3.5 11H1V8.5L8.5 1z"
+                  stroke="#555" stroke-width="1.3" stroke-linejoin="round" fill="none"/>
+          </svg>
+          Edit
+        </button>
+
+        <div class="edit-actions hidden" id="patientEditActions">
+          <button class="cancel-btn" onclick="cancelEdit('patient', event)">Cancel</button>
+          <button class="done-btn"   onclick="doneEdit('patient',  event)">Done</button>
+        </div>
       </div>
     </div>
 
@@ -844,14 +866,17 @@ function resetAll() {
   hide('charPill');
 }
 
-/* ─────────────────────── Expand / fullscreen ──────────────────────────── */
-let expanded = false;
-function toggleExpand() {
-  expanded = !expanded;
-  const d = expanded ? 'none' : '';
-  $('statusBar').style.display    = d;
-  $('appControls').style.display  = d;
-  $('bottomNav').style.display    = d;
+/* ─────────────────────── Patient zone expand ──────────────────────────── */
+let patientExpanded = false;
+const ICON_EXPAND   = 'M11 2h5v5M7 16H2v-5M16 2l-5.5 5.5M2 16l5.5-5.5';
+const ICON_COLLAPSE = 'M2 7V2h5M16 11v5h-5M2 2l5.5 5.5M16 16l-5.5-5.5';
+
+function togglePatientSize(e) {
+  e.stopPropagation();
+  patientExpanded = !patientExpanded;
+  document.querySelector('.main').classList.toggle('patient-expanded', patientExpanded);
+  const path = $('expandIcon').querySelector('path');
+  path.setAttribute('d', patientExpanded ? ICON_COLLAPSE : ICON_EXPAND);
 }
 
 /* ─────────────────────── Init ─────────────────────────────────────────── */
