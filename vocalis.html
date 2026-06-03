@@ -743,7 +743,7 @@ const text = (id, v) => $(id).textContent = v;
 function onZoneClick(who) {
   // Only act on a direct zone tap with no active recording and no active edit
   if (S.recording) return;
-  if ($( who + 'EditActions').classList.contains('hidden') === false) return;
+  if (S.editingWho !== null) return;  // block zone tap while editing
   startRecording(who, { stopPropagation: () => {} });
 }
 
@@ -778,7 +778,7 @@ function startRecording(who, e) {
   text(other + 'Text', '');
   hide(who   + 'Raw');
   hide(other + 'Raw');
-  hide(other + 'EditBtn'); hide(other + 'Playback'); hide(other + 'EditActions');
+  hide(other + 'EditBtn'); hide(other + 'Playback');
 
   // Hide speaker's own edit/playback until they've spoken
   hide(who + 'EditBtn');
@@ -1078,7 +1078,7 @@ function resetAll() {
     $(w + 'Zone').className     = 'zone';
     show(w + 'Mic');
     hide(w + 'Stop');   hide(w + 'EditBtn');
-    hide(w + 'Playback'); hide(w + 'EditActions'); hide(w + 'Hint');
+    hide(w + 'Playback'); hide(w + 'Hint');
     hide(w + 'Raw');
     $(w + 'Text').contentEditable = 'false';
     S[w + 'Text'] = ''; S[w + 'Translated'] = '';
