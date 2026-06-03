@@ -292,6 +292,130 @@
     }
     .nav-item.active { color: #111; font-weight: 700; }
 
+    /* ── AI Mode ─────────────────────────────────── */
+
+    /* Toggle sparkle icon */
+    .toggle-sparkle {
+      position: absolute;
+      left: 5px; top: 50%;
+      transform: translateY(-50%);
+      font-size: 11px; line-height: 1;
+      color: rgba(255,255,255,0);
+      pointer-events: none;
+      transition: color 0.2s, left 0.2s;
+    }
+    .toggle-track.on .toggle-sparkle {
+      color: rgba(255,255,255,0.9);
+      left: 6px;
+    }
+
+    /* Edge glow overlay */
+    #aiGlow {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 90;
+      opacity: 0; transition: opacity 0.5s ease;
+    }
+    #aiGlow.on { opacity: 1; }
+    #aiGlow::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 40% at 50% 0%,   rgba(123,47,247,0.22) 0%, transparent 100%),
+        radial-gradient(ellipse 80% 40% at 50% 100%, rgba(41,198,224,0.18) 0%, transparent 100%),
+        radial-gradient(ellipse 40% 80% at 0%   50%, rgba(224,24,138,0.18) 0%, transparent 100%),
+        radial-gradient(ellipse 40% 80% at 100% 50%, rgba(123,47,247,0.18) 0%, transparent 100%);
+    }
+
+    /* Raw / original text (shown below cleaned text in AI mode) */
+    .raw-text {
+      font-size: 13px; color: #BBBBBB;
+      font-style: italic; line-height: 1.5;
+      margin-top: 8px; flex-shrink: 0;
+      word-break: break-word;
+      -webkit-user-select: text; user-select: text;
+    }
+    .raw-text.hidden { display: none; }
+    .raw-text s { text-decoration-color: #DDDDDD; color: #CCCCCC; }
+
+    /* ── AI Onboarding Sheet ──────────────────────── */
+    #aiBackdrop {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 95; opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+    #aiBackdrop.open { opacity: 1; pointer-events: auto; }
+
+    #aiSheet {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: white;
+      border-radius: 24px 24px 0 0;
+      padding: 28px 24px max(env(safe-area-inset-bottom,24px),24px);
+      z-index: 96;
+      top: auto;
+      transform: translateY(100%);
+      transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+      max-height: 90dvh; overflow-y: auto;
+      will-change: transform;
+    }
+    #aiSheet.open { transform: translateY(0) !important; }
+
+    .sheet-handle {
+      width: 36px; height: 4px; border-radius: 2px;
+      background: #E5E5E5; margin: 0 auto 20px;
+    }
+    .sheet-header {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 22px;
+    }
+    .sheet-title { font-size: 21px; font-weight: 700; }
+    .sheet-close {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: #F2F2F7; border: none; cursor: pointer;
+      font-size: 16px; color: #666;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* Demo sections inside sheet */
+    .demo-section { margin-bottom: 6px; }
+    .demo-label {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.6px; text-transform: uppercase;
+      color: #AAAAAA; margin-bottom: 8px;
+    }
+    .demo-label.cyan { color: #29C6E0; }
+    .demo-label.green { color: #4CAF50; }
+    .demo-body {
+      font-size: 17px; line-height: 1.5; color: #111;
+    }
+    .demo-body s   { color: #CCCCCC; text-decoration-color: #CCCCCC; }
+    .demo-body .hi { color: #29C6E0; }  /* AI-highlighted key phrases */
+    .demo-translation {
+      font-size: 16px; line-height: 1.5; color: #999;
+    }
+    .demo-divider {
+      height: 1px; background: #F0F0F0; margin: 14px 0;
+    }
+
+    .privacy-note {
+      display: flex; align-items: center; justify-content: center;
+      gap: 5px; font-size: 12px; color: #BBBBBB;
+      margin: 20px 0 16px;
+    }
+    .ai-cta {
+      width: 100%; padding: 17px; border: none; border-radius: 16px;
+      background: #29C6E0; color: white;
+      font-size: 17px; font-weight: 600; cursor: pointer;
+      margin-bottom: 12px;
+    }
+    .ai-not-now {
+      width: 100%; padding: 12px; border: none;
+      background: none; font-size: 15px; color: #AAAAAA;
+      cursor: pointer;
+    }
+
     /* ── Setup banner (file:// warning) ──────────── */
     #setup-banner {
       position: fixed; bottom: 0; left: 0; right: 0;
@@ -343,8 +467,9 @@
 <!-- App Controls (AI mode toggle only) -->
 <div class="app-controls" id="appControls">
   <div class="ai-toggle-row">
-    <div class="toggle-track" id="aiToggle" onclick="this.classList.toggle('on')">
+    <div class="toggle-track" id="aiToggle" onclick="toggleAIMode()">
       <div class="toggle-thumb"></div>
+      <span class="toggle-sparkle">✦</span>
     </div>
     <span>AI Mode</span>
   </div>
@@ -387,6 +512,7 @@
     </div>
 
     <div class="zone-text" id="patientText"></div>
+    <div class="raw-text hidden" id="patientRaw"></div>
     <div class="hint hidden" id="patientHint">Translating…</div>
 
     <div class="playback-row hidden" id="patientPlayback">
@@ -450,6 +576,7 @@
     </div>
 
     <div class="zone-text" id="nurseText"></div>
+    <div class="raw-text hidden" id="nurseRaw"></div>
     <div class="hint hidden" id="nurseHint">Translating…</div>
 
     <div class="playback-row hidden" id="nursePlayback">
@@ -512,6 +639,57 @@
     </svg>
     <span>Cards</span>
   </div>
+</div>
+
+<!-- AI Mode glow overlay -->
+<div id="aiGlow"></div>
+
+<!-- AI Mode onboarding sheet -->
+<div id="aiBackdrop" onclick="closeAISheet()"></div>
+<div id="aiSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="sheet-title">How AI Mode works</div>
+    <button class="sheet-close" onclick="closeAISheet()">✕</button>
+  </div>
+
+  <!-- Demo: original spoken -->
+  <div class="demo-section">
+    <div class="demo-label">🇺🇸 English &nbsp;·&nbsp; Spoken</div>
+    <div class="demo-body">
+      <s>Well, uh,</s> she's <span class="hi">having trouble breathing</span>,
+      she <span class="hi">can't catch her breath</span>, and her chest feels tight.
+    </div>
+  </div>
+  <div class="demo-divider"></div>
+
+  <!-- Demo: AI cleaned -->
+  <div class="demo-section">
+    <div class="demo-label cyan">🇺🇸 English &nbsp;·&nbsp; Cleaned by AI</div>
+    <div class="demo-body">
+      She's <span class="hi">short of breath</span>, and her chest feels tight.
+    </div>
+  </div>
+  <div class="demo-divider"></div>
+
+  <!-- Demo: translation -->
+  <div class="demo-section">
+    <div class="demo-label">🇲🇽 Spanish &nbsp;·&nbsp; Translation</div>
+    <div class="demo-translation">
+      Le falta el aire, y siente opresión en el pecho.
+    </div>
+  </div>
+
+  <div class="privacy-note">
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+      <rect x="1" y="5" width="11" height="8" rx="1.5" stroke="#BBBBBB" stroke-width="1.2"/>
+      <path d="M4 5V3.5a2.5 2.5 0 015 0V5" stroke="#BBBBBB" stroke-width="1.2" stroke-linecap="round"/>
+    </svg>
+    Processed privately · never stored
+  </div>
+
+  <button class="ai-cta" onclick="confirmAIMode()">Turn on AI Mode</button>
+  <button class="ai-not-now" onclick="closeAISheet()">Not now</button>
 </div>
 
 <!-- File-protocol warning -->
@@ -586,6 +764,8 @@ function startRecording(who, e) {
   // Clear BOTH zones' text display for a clean new turn
   text(who   + 'Text', '');
   text(other + 'Text', '');
+  hide(who   + 'Raw');
+  hide(other + 'Raw');
   hide(other + 'EditBtn'); hide(other + 'Playback'); hide(other + 'EditActions');
 
   // Hide speaker's own edit/playback until they've spoken
@@ -668,7 +848,7 @@ async function stopRecording(who, e) {
 
   if (recog) {
     const r = recog;
-    recog = null;        // null first so onend restart check fails immediately
+    recog = null;
     r.onend    = null;
     r.onresult = null;
     try { r.stop(); } catch (_) {}
@@ -686,27 +866,35 @@ async function stopRecording(who, e) {
   show(who   + 'Mic');
   show(other + 'Mic');
 
-  // Show edit btn for speaker (post-stop)
+  // Show edit btn for speaker
   show(who + 'EditBtn');
 
-  // Show translating hint in other zone while we fetch
-  show(other + 'Hint');
+  // ── AI Mode: clean the raw transcript ──
+  let textToTranslate = raw;
+  if (aiEnabled) {
+    const { cleaned, rawHtml } = cleanText(raw);
+    S[who + 'RawText'] = raw;         // keep original for edit
+    S[who + 'Text']    = cleaned;     // cleaned = what gets translated
+    textToTranslate    = cleaned;
+    // Display cleaned text prominently + raw below with strikethrough
+    showAIResult(who, cleaned, rawHtml);
+  }
 
+  // Translate (use cleaned text if AI mode, else raw)
+  show(other + 'Hint');
   const fromLang = who === 'nurse' ? 'en' : 'es';
   const toLang   = who === 'nurse' ? 'es' : 'en';
-  const translated = await doTranslate(raw, fromLang, toLang);
+  const translated = await doTranslate(textToTranslate, fromLang, toLang);
   S[who + 'Translated'] = translated;
 
   hide(other + 'Hint');
   text(other + 'Text', translated);
   show(other + 'Playback');
 
-  // Reset speed display
   S[other + 'Speed'] = 0;
   $(other + 'SpeedBtn').textContent = '';
   renderSpeedBtn(other);
 
-  // Auto-play translation
   speak(translated, toLang, SPEED_OPTS[0]);
 }
 
@@ -794,9 +982,16 @@ function startEdit(who, e) {
     show(other + 'Mic');
   }
 
-  S[who + 'Snap'] = $(who + 'Text').textContent;
+  // In AI mode, edit the ORIGINAL raw text (not the cleaned version)
+  const editText = (aiEnabled && S[who + 'RawText'])
+    ? S[who + 'RawText']
+    : $(who + 'Text').textContent;
+
+  S[who + 'Snap'] = editText;
+  hide(who + 'Raw');   // hide raw display during edit
 
   const el = $(who + 'Text');
+  el.textContent = editText;
   el.contentEditable = 'true';
   el.focus();
 
@@ -818,7 +1013,14 @@ function cancelEdit(who, e) {
   e.stopPropagation();
   const el = $(who + 'Text');
   el.contentEditable = 'false';
-  el.textContent = S[who + 'Snap'];
+
+  // Restore: if AI mode was on, put cleaned text back and show raw
+  if (aiEnabled && S[who + 'RawText']) {
+    el.textContent = S[who + 'Text'];   // cleaned text
+    show(who + 'Raw');
+  } else {
+    el.textContent = S[who + 'Snap'];
+  }
 
   hide(who + 'EditActions');
   show(who + 'EditBtn');
@@ -829,9 +1031,8 @@ function cancelEdit(who, e) {
 async function doneEdit(who, e) {
   e.stopPropagation();
   const el  = $(who + 'Text');
-  const raw = el.textContent.trim();
+  const editedRaw = el.textContent.trim();
   el.contentEditable = 'false';
-  S[who + 'Text'] = raw;
 
   hide(who + 'EditActions');
   show(who + 'EditBtn');
@@ -840,13 +1041,26 @@ async function doneEdit(who, e) {
   const other = who === 'nurse' ? 'patient' : 'nurse';
   show(other + 'Mic');
 
-  if (!raw) return;
+  if (!editedRaw) return;
+
+  // In AI mode: re-clean the edited raw text, then translate the cleaned version
+  let textToTranslate = editedRaw;
+  if (aiEnabled) {
+    S[who + 'RawText'] = editedRaw;
+    const { cleaned, rawHtml } = cleanText(editedRaw);
+    S[who + 'Text'] = cleaned;
+    textToTranslate = cleaned;
+    showAIResult(who, cleaned, rawHtml);
+  } else {
+    S[who + 'Text'] = editedRaw;
+    hide(who + 'Raw');
+  }
 
   const fromLang = who === 'nurse' ? 'en' : 'es';
   const toLang   = who === 'nurse' ? 'es' : 'en';
 
   show(other + 'Hint');
-  const translated = await doTranslate(raw, fromLang, toLang);
+  const translated = await doTranslate(textToTranslate, fromLang, toLang);
   hide(other + 'Hint');
 
   text(other + 'Text', translated);
@@ -864,8 +1078,10 @@ function resetAll() {
     show(w + 'Mic');
     hide(w + 'Stop');   hide(w + 'EditBtn');
     hide(w + 'Playback'); hide(w + 'EditActions'); hide(w + 'Hint');
+    hide(w + 'Raw');
     $(w + 'Text').contentEditable = 'false';
     S[w + 'Text'] = ''; S[w + 'Translated'] = '';
+    S[w + 'RawText'] = '';
   });
   hide('charPill');
 }
@@ -881,6 +1097,123 @@ function togglePatientSize(e) {
   document.querySelector('.main').classList.toggle('patient-expanded', patientExpanded);
   const path = $('expandIcon').querySelector('path');
   path.setAttribute('d', patientExpanded ? ICON_COLLAPSE : ICON_EXPAND);
+}
+
+/* ─────────────────────── AI Mode ───────────────────────────────────────── */
+
+let aiEnabled  = false;
+let aiShownOnce = false;  // only show onboarding on first enable
+
+// Filler words / phrases that AI mode strips
+const FILLERS = [
+  /\b(well|okay|ok),?\s+/gi,
+  /\b(uh+|um+|uhm+|hmm*),?\s*/gi,
+  /\b(like),\s+/gi,                          // "like, " as filler
+  /\byou know,?\s*/gi,
+  /\bi mean,?\s*/gi,
+  /\bbasically,?\s*/gi,
+  /\bso,\s+(?=\w)/gi,                        // "so, word" but not end of sentence
+  /\bright\?,?\s*/gi,
+  /\bi guess,?\s*/gi,
+  /\bkind of\s+/gi,
+  /\bsort of\s+/gi,
+  /\bjust,\s+/gi,
+  /\bactually,\s+/gi,
+  /\bliterally,\s+/gi,
+];
+
+// Greetings stripped from the front of a message
+const GREETINGS = [
+  /^(hi+|hey+|hello+)[,!.]?\s*/i,
+  /^how are you[?.]?\s*/i,
+  /^good (morning|afternoon|evening)[,.]?\s*/i,
+  /^(okay|ok) so,?\s*/i,
+];
+
+/**
+ * Clean spoken text: remove fillers & leading greetings.
+ * Returns { cleaned: string, rawHtml: string }
+ * rawHtml wraps detected fillers in <s> tags for display.
+ */
+function cleanText(raw) {
+  let rawHtml  = raw;
+  let cleaned  = raw;
+
+  // Mark fillers in the HTML version with strikethrough
+  FILLERS.forEach(rx => {
+    rawHtml = rawHtml.replace(rx, m => m.trim() ? `<s>${m}</s>` : m);
+    cleaned = cleaned.replace(rx, ' ');
+  });
+
+  // Strip leading greetings from cleaned version
+  GREETINGS.forEach(rx => {
+    cleaned = cleaned.replace(rx, '');
+    rawHtml = rawHtml.replace(rx, m => `<s>${m}</s>`);
+  });
+
+  // Tidy whitespace
+  cleaned = cleaned.replace(/\s{2,}/g, ' ').trim();
+  // Fix capitalisation
+  if (cleaned.length > 0) {
+    cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+  }
+  // Restore terminal punctuation if lost
+  if (cleaned.length > 0 && !/[.!?]$/.test(cleaned) && /[.!?]$/.test(raw.trim())) {
+    cleaned += raw.trim().slice(-1);
+  }
+
+  return { cleaned, rawHtml };
+}
+
+function toggleAIMode() {
+  if (!aiEnabled) {
+    // Show onboarding sheet before enabling
+    openAISheet();
+  } else {
+    // Turn off immediately
+    disableAIMode();
+  }
+}
+
+function openAISheet() {
+  $('aiBackdrop').classList.add('open');
+  $('aiSheet').classList.add('open');
+}
+
+function closeAISheet() {
+  $('aiBackdrop').classList.remove('open');
+  $('aiSheet').classList.remove('open');
+  // If they closed without confirming, make sure toggle reflects state
+  if (!aiEnabled) {
+    $('aiToggle').classList.remove('on');
+  }
+}
+
+function confirmAIMode() {
+  closeAISheet();
+  enableAIMode();
+}
+
+function enableAIMode() {
+  aiEnabled = true;
+  $('aiToggle').classList.add('on');
+  $('aiGlow').classList.add('on');
+}
+
+function disableAIMode() {
+  aiEnabled = false;
+  $('aiToggle').classList.remove('on');
+  $('aiGlow').classList.remove('on');
+  // Hide any raw text currently showing
+  hide('nurseRaw'); hide('patientRaw');
+}
+
+/** Show cleaned text prominently, raw original below with filler strikethrough */
+function showAIResult(who, cleaned, rawHtml) {
+  text(who + 'Text', cleaned);
+  const rawEl = $(who + 'Raw');
+  rawEl.innerHTML = rawHtml;
+  rawEl.classList.remove('hidden');
 }
 
 /* ─────────────────────── Init ─────────────────────────────────────────── */
