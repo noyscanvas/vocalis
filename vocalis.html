@@ -201,25 +201,25 @@
     }
     .edit-btn.hidden   { display: none !important; }
 
-    /* ── Keyboard Done bar ───────────────────────── */
+    /* ── Keyboard Done pill ──────────────────────── */
     #keyboardBar {
       position: fixed;
-      left: 0; right: 0; bottom: 0;
-      background: #F2F3F5;
-      border-top: 1px solid #D8D8DC;
-      padding: 8px 16px;
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
+      right: 16px;
+      bottom: 10px;   /* sits just above keyboard via JS */
+      background: transparent;
+      border: none;
+      padding: 0;
       z-index: 80;
-      transition: bottom 0.05s linear;
+      transition: bottom 0.08s linear;
     }
     #keyboardBar.hidden { display: none; }
     #keyboardBar .done-btn {
       background: #29C6E0; border: none;
-      border-radius: 8px; padding: 8px 22px;
-      font-size: 16px; font-weight: 600;
+      border-radius: 22px; padding: 10px 22px;
+      font-size: 15px; font-weight: 600;
       color: white; cursor: pointer;
+      box-shadow: 0 3px 12px rgba(41,198,224,0.45);
+      display: block;
     }
 
     /* ── FABs (+10% → 62px) ──────────────────────── */
