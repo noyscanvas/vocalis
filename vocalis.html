@@ -318,12 +318,21 @@
     #aiGlow.on { opacity: 1; }
     #aiGlow::before {
       content: '';
-      position: absolute; inset: 0;
-      background:
-        radial-gradient(ellipse 80% 40% at 50% 0%,   rgba(123,47,247,0.22) 0%, transparent 100%),
-        radial-gradient(ellipse 80% 40% at 50% 100%, rgba(41,198,224,0.18) 0%, transparent 100%),
-        radial-gradient(ellipse 40% 80% at 0%   50%, rgba(224,24,138,0.18) 0%, transparent 100%),
-        radial-gradient(ellipse 40% 80% at 100% 50%, rgba(123,47,247,0.18) 0%, transparent 100%);
+      position: absolute;
+      inset: 0;
+      padding: 3px;  /* stroke width */
+      background: linear-gradient(135deg,
+        #7B2FF7 0%,
+        #5B8BF7 35%,
+        #29C6E0 65%,
+        #9B4FE8 100%
+      );
+      /* Mask trick: show only the border area (padding zone), not the interior */
+      -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+      -webkit-mask-composite: destination-out;
+      mask-composite: exclude;
     }
 
     /* Raw / original text (shown below cleaned text in AI mode) */
@@ -982,16 +991,12 @@ function startEdit(who, e) {
     show(other + 'Mic');
   }
 
-  // In AI mode, edit the ORIGINAL raw text (not the cleaned version)
-  const editText = (aiEnabled && S[who + 'RawText'])
-    ? S[who + 'RawText']
-    : $(who + 'Text').textContent;
-
-  S[who + 'Snap'] = editText;
-  hide(who + 'Raw');   // hide raw display during edit
+  // Edit always starts from the current displayed text (cleaned if AI mode was on)
+  // User edits override AI — no re-cleaning will happen
+  S[who + 'Snap'] = $(who + 'Text').textContent;
+  hide(who + 'Raw');   // hide raw display; user is now in control
 
   const el = $(who + 'Text');
-  el.textContent = editText;
   el.contentEditable = 'true';
   el.focus();
 
@@ -1014,13 +1019,9 @@ function cancelEdit(who, e) {
   const el = $(who + 'Text');
   el.contentEditable = 'false';
 
-  // Restore: if AI mode was on, put cleaned text back and show raw
-  if (aiEnabled && S[who + 'RawText']) {
-    el.textContent = S[who + 'Text'];   // cleaned text
-    show(who + 'Raw');
-  } else {
-    el.textContent = S[who + 'Snap'];
-  }
+  el.textContent = S[who + 'Snap'];
+  // Restore raw display if it existed before editing
+  if (S[who + 'RawText']) show(who + 'Raw');
 
   hide(who + 'EditActions');
   show(who + 'EditBtn');
@@ -1043,18 +1044,11 @@ async function doneEdit(who, e) {
 
   if (!editedRaw) return;
 
-  // In AI mode: re-clean the edited raw text, then translate the cleaned version
-  let textToTranslate = editedRaw;
-  if (aiEnabled) {
-    S[who + 'RawText'] = editedRaw;
-    const { cleaned, rawHtml } = cleanText(editedRaw);
-    S[who + 'Text'] = cleaned;
-    textToTranslate = cleaned;
-    showAIResult(who, cleaned, rawHtml);
-  } else {
-    S[who + 'Text'] = editedRaw;
-    hide(who + 'Raw');
-  }
+  // User edit overrides AI — translate the edited text directly, no re-cleaning
+  S[who + 'Text'] = editedRaw;
+  S[who + 'RawText'] = '';   // clear raw; user is now in control
+  hide(who + 'Raw');
+  const textToTranslate = editedRaw;
 
   const fromLang = who === 'nurse' ? 'en' : 'es';
   const toLang   = who === 'nurse' ? 'es' : 'en';
