@@ -201,20 +201,25 @@
     }
     .edit-btn.hidden   { display: none !important; }
 
-    /* Edit-mode action buttons (Cancel / Done) */
-    .edit-actions { display: flex; align-items: center; gap: 8px; }
-    .edit-actions.hidden { display: none !important; }
-
-    .cancel-btn {
-      background: none; border: none;
-      font-size: 15px; color: #555; cursor: pointer;
-      padding: 10px 8px; font-weight: 400; min-height: 44px;
+    /* ── Keyboard Done bar ───────────────────────── */
+    #keyboardBar {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      background: #F2F3F5;
+      border-top: 1px solid #D8D8DC;
+      padding: 8px 16px;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      z-index: 80;
+      transition: bottom 0.05s linear;
     }
-    .done-btn {
+    #keyboardBar.hidden { display: none; }
+    #keyboardBar .done-btn {
       background: #29C6E0; border: none;
-      border-radius: 24px; padding: 10px 22px;
-      font-size: 15px; font-weight: 600;
-      color: white; cursor: pointer; min-height: 44px;
+      border-radius: 8px; padding: 8px 22px;
+      font-size: 16px; font-weight: 600;
+      color: white; cursor: pointer;
     }
 
     /* ── FABs (+10% → 62px) ──────────────────────── */
@@ -513,10 +518,6 @@
           Edit
         </button>
 
-        <div class="edit-actions hidden" id="patientEditActions">
-          <button class="cancel-btn" onclick="cancelEdit('patient', event)">Cancel</button>
-          <button class="done-btn"   onclick="doneEdit('patient',  event)">Done</button>
-        </div>
       </div>
     </div>
 
@@ -578,10 +579,6 @@
         Edit
       </button>
 
-      <div class="edit-actions hidden" id="nurseEditActions">
-        <button class="cancel-btn" onclick="cancelEdit('nurse', event)">Cancel</button>
-        <button class="done-btn"   onclick="doneEdit('nurse',  event)">Done</button>
-      </div>
     </div>
 
     <div class="zone-text" id="nurseText"></div>
@@ -648,6 +645,11 @@
     </svg>
     <span>Cards</span>
   </div>
+</div>
+
+<!-- Keyboard Done bar -->
+<div id="keyboardBar" class="hidden">
+  <button class="done-btn" onclick="doneCurrentEdit()">Done</button>
 </div>
 
 <!-- AI Mode glow overlay -->
@@ -719,7 +721,8 @@ const SPEED_LABELS  = ['1x', '1.5x', '0.75x'];
 
 /* ─────────────────────── App state ───────────────────────────────────── */
 const S = {
-  recording:  null,   // 'nurse' | 'patient' | null
+  recording:   null,   // 'nurse' | 'patient' | null
+  editingWho:  null,   // 'nurse' | 'patient' | null — tracks active edit zone
   nurseText:       '', nurseTranslated:   '',
   patientText:     '', patientTranslated: '',
   nurseSpeed:      0,  patientSpeed:      0,
@@ -991,10 +994,10 @@ function startEdit(who, e) {
     show(other + 'Mic');
   }
 
-  // Edit always starts from the current displayed text (cleaned if AI mode was on)
-  // User edits override AI — no re-cleaning will happen
-  S[who + 'Snap'] = $(who + 'Text').textContent;
-  hide(who + 'Raw');   // hide raw display; user is now in control
+  // Edit always starts from the current displayed text
+  S[who + 'Snap']    = $(who + 'Text').textContent;
+  S.editingWho       = who;   // tracked so keyboard Done bar knows which zone
+  hide(who + 'Raw');          // hide raw display; user is now in control
 
   const el = $(who + 'Text');
   el.contentEditable = 'true';
@@ -1011,19 +1014,22 @@ function startEdit(who, e) {
   hide(who + 'EditBtn');
   hide(who + 'Mic');
   hide(who === 'nurse' ? 'patientMic' : 'nurseMic');
-  show(who + 'EditActions');
+  show('keyboardBar');
+}
+
+/** Called by the keyboard Done bar button */
+function doneCurrentEdit() {
+  if (S.editingWho) doneEdit(S.editingWho, { stopPropagation: () => {} });
 }
 
 function cancelEdit(who, e) {
-  e.stopPropagation();
+  if (e && e.stopPropagation) e.stopPropagation();
   const el = $(who + 'Text');
   el.contentEditable = 'false';
-
   el.textContent = S[who + 'Snap'];
-  // Restore raw display if it existed before editing
   if (S[who + 'RawText']) show(who + 'Raw');
-
-  hide(who + 'EditActions');
+  hide('keyboardBar');
+  S.editingWho = null;
   show(who + 'EditBtn');
   show(who + 'Mic');
   show(who === 'nurse' ? 'patientMic' : 'nurseMic');
@@ -1035,7 +1041,8 @@ async function doneEdit(who, e) {
   const editedRaw = el.textContent.trim();
   el.contentEditable = 'false';
 
-  hide(who + 'EditActions');
+  hide('keyboardBar');
+  S.editingWho = null;
   show(who + 'EditBtn');
   show(who + 'Mic');
 
@@ -1221,6 +1228,16 @@ function showAIResult(who, cleaned, rawHtml) {
   if (window.speechSynthesis) {
     window.speechSynthesis.getVoices();
     window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+  }
+
+  // Position keyboard bar just above the software keyboard on iOS/Android
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => {
+      const bar = $('keyboardBar');
+      if (!bar || bar.classList.contains('hidden')) return;
+      const offset = window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop;
+      bar.style.bottom = Math.max(0, offset) + 'px';
+    });
   }
 })();
 </script>
