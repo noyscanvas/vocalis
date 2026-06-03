@@ -235,10 +235,19 @@
     .mic-fab {
       background: #29C6E0;
       box-shadow: 0 4px 16px rgba(41, 198, 224, 0.45);
-      transition: transform 0.12s;
+      transition: transform 0.12s, background 0.15s;
+      touch-action: none;   /* prevent scroll-cancel on hold */
+      user-select: none; -webkit-user-select: none;
     }
     .mic-fab:active  { transform: scale(0.91); }
     .mic-fab.hidden  { display: none !important; }
+
+    /* Hold-to-record: mic turns red + pulses while held */
+    .mic-fab.holding {
+      background: #E53935;
+      animation: pulse-ring 1.6s infinite;
+      transform: scale(1.06);
+    }
 
     .stop-fab {
       background: #E53935;
@@ -541,7 +550,7 @@
       </button>
     </div>
 
-    <button class="mic-fab" id="patientMic" onclick="startRecording('patient', event)">
+    <button class="mic-fab" id="patientMic">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
         <rect x="9" y="2" width="6" height="12" rx="3" fill="white"/>
         <path d="M5 11a7 7 0 0014 0" stroke="white" stroke-width="2" stroke-linecap="round"/>
@@ -601,7 +610,7 @@
       </button>
     </div>
 
-    <button class="mic-fab" id="nurseMic" onclick="startRecording('nurse', event)">
+    <button class="mic-fab" id="nurseMic">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
         <rect x="9" y="2" width="6" height="12" rx="3" fill="white"/>
         <path d="M5 11a7 7 0 0014 0" stroke="white" stroke-width="2" stroke-linecap="round"/>
@@ -769,8 +778,10 @@ function startRecording(who, e) {
   $(who   + 'Zone').classList.add(who + '-active');
   $(other + 'Zone').className = 'zone';
 
-  // Swap mic → stop for speaker; hide other mic
-  hide(who   + 'Mic');  show(who   + 'Stop');
+  // Swap mic → stop for speaker (tap mode); hold mode keeps mic visible
+  if (!holdMode) {
+    hide(who + 'Mic'); show(who + 'Stop');
+  }
   hide(other + 'Mic');
 
   // Clear BOTH zones' text display for a clean new turn
@@ -1224,8 +1235,62 @@ function showAIResult(who, cleaned, rawHtml) {
   rawEl.classList.remove('hidden');
 }
 
+/* ─────────────────────── Dual-mode mic (tap + hold) ────────────────────── */
+
+const HOLD_MS   = 300;   // ms threshold to distinguish tap vs hold
+let   holdTimer = null;
+let   holdMode  = false; // true while in hold-to-record mode
+
+function setupMicListeners(who) {
+  const btn = $(who + 'Mic');
+
+  // Prevent browser long-press context menu interfering
+  btn.addEventListener('contextmenu', e => e.preventDefault());
+
+  btn.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (S.recording) return;          // already recording (other zone or this zone)
+
+    // Schedule hold-mode activation after threshold
+    holdTimer = setTimeout(() => {
+      holdMode = true;
+      btn.classList.add('holding');    // mic turns red + pulses
+      startRecording(who, { stopPropagation: () => {} });
+    }, HOLD_MS);
+  });
+
+  btn.addEventListener('pointerup', e => {
+    e.stopPropagation();
+    if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+
+    if (holdMode) {
+      // HOLD mode → release ends recording
+      holdMode = false;
+      btn.classList.remove('holding');
+      if (S.recording === who) stopRecording(who, { stopPropagation: () => {} });
+    } else {
+      // TAP mode → start normal toggle (stop button appears)
+      if (!S.recording) startRecording(who, { stopPropagation: () => {} });
+    }
+  });
+
+  btn.addEventListener('pointercancel', e => {
+    if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+    if (holdMode) {
+      holdMode = false;
+      btn.classList.remove('holding');
+      if (S.recording === who) stopRecording(who, { stopPropagation: () => {} });
+    }
+  });
+}
+
 /* ─────────────────────── Init ─────────────────────────────────────────── */
 (function init() {
+  // Attach dual-mode mic listeners (tap + hold-to-record)
+  setupMicListeners('nurse');
+  setupMicListeners('patient');
+
   // Warn if running over file:// (speech API won't work)
   if (location.protocol === 'file:') {
     show('setup-banner');
