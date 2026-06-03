@@ -205,7 +205,7 @@
     #keyboardBar {
       position: fixed;
       right: 16px;
-      bottom: 10px;   /* sits just above keyboard via JS */
+      bottom: 76px;   /* default: above the nav bar */
       background: transparent;
       border: none;
       padding: 0;
@@ -1015,6 +1015,13 @@ function startEdit(who, e) {
   hide(who + 'Mic');
   hide(who === 'nurse' ? 'patientMic' : 'nurseMic');
   show('keyboardBar');
+
+  // Auto-commit when user dismisses keyboard (taps outside text area)
+  el.addEventListener('blur', function onBlur() {
+    el.removeEventListener('blur', onBlur);
+    // Small delay so a Done button tap runs first and clears S.editingWho
+    setTimeout(() => { if (S.editingWho) doneCurrentEdit(); }, 150);
+  });
 }
 
 /** Called by the keyboard Done bar button */
@@ -1230,13 +1237,15 @@ function showAIResult(who, cleaned, rawHtml) {
     window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
   }
 
-  // Position keyboard bar just above the software keyboard on iOS/Android
+  // Position Done pill: above keyboard when open, above nav when closed
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', () => {
       const bar = $('keyboardBar');
       if (!bar || bar.classList.contains('hidden')) return;
-      const offset = window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop;
-      bar.style.bottom = Math.max(0, offset) + 'px';
+      const nav      = $('bottomNav');
+      const navH     = nav ? nav.getBoundingClientRect().height : 72;
+      const keyboardH = window.innerHeight - window.visualViewport.height;
+      bar.style.bottom = (keyboardH > 80 ? keyboardH + 8 : navH + 8) + 'px';
     });
   }
 })();
